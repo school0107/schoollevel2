@@ -1,6 +1,7 @@
 package com.schoollevel2.utils;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -28,9 +29,18 @@ public class ItemUtil {
         if (!item.hasItemMeta()) return false;
         var meta = item.getItemMeta();
         if (meta == null || !meta.hasDisplayName()) return false;
-        String plain = ColorUtil.stripTags(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage()
-                .serialize(meta.displayName()));
+
+        Component displayComp = meta.displayName();
+        if (displayComp == null) return false;
+
+        String plain;
+        try {
+            plain = MiniMessage.miniMessage().serialize(displayComp);
+            plain = ColorUtil.stripTags(plain);
+        } catch (Exception e) {
+            plain = displayComp.toString();
+        }
         String expected = ColorUtil.stripTags(resetName);
-        return plain.equalsIgnoreCase(expected);
+        return plain.trim().equalsIgnoreCase(expected.trim());
     }
 }

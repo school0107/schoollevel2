@@ -20,30 +20,26 @@ public class StatsManager {
         PlayerData data = plugin.getDataManager().get(player.getUniqueId());
         if (data == null) return;
 
-        // Health
+        // HEALTH
         int hpPoints = data.getStat("health");
         double bonusHp = hpPoints * plugin.getConfigManager().getStatPerPoint("health");
         AttributeInstance attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (attr != null) {
-            double base = 20.0;
-            double target = base + bonusHp;
+            double target = 20.0 + bonusHp;
             if (Math.abs(attr.getBaseValue() - target) > 0.01) {
                 attr.setBaseValue(target);
-                if (player.getHealth() > target) player.setHealth(target);
             }
+            if (player.getHealth() > target) player.setHealth(target);
         }
 
-        // Agility -> speed effect (regenerated each second in actionbar or on stat change)
+        // AGILITY
         int agiPoints = data.getStat("agility");
         double speedPct = agiPoints * plugin.getConfigManager().getStatPerPoint("agility");
         player.removePotionEffect(PotionEffectType.SPEED);
-        if (speedPct > 0) {
-            int amplifier = (int) Math.floor(speedPct / 20.0); // 20% per level of speed
-            amplifier = Math.min(amplifier, 4);
-            if (amplifier >= 0 && speedPct >= 20.0) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED,
-                        Integer.MAX_VALUE, amplifier, true, false, false));
-            }
+        if (speedPct >= 20.0) {
+            int amplifier = (int) Math.min(4, Math.floor(speedPct / 20.0));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED,
+                    Integer.MAX_VALUE, amplifier, true, false, false));
         }
     }
 
@@ -81,19 +77,6 @@ public class StatsManager {
 
         data.setStat(stat, current + toAdd);
         data.setPotentialPoints(data.getPotentialPoints() - toAdd);
-        applyStats(player);
-        return true;
-    }
-
-    public boolean removeStat(Player player, String stat, int amount) {
-        PlayerData data = plugin.getDataManager().get(player.getUniqueId());
-        if (data == null) return false;
-        if (amount <= 0) return false;
-        int current = data.getStat(stat);
-        if (current <= 0) return false;
-        int toRemove = Math.min(amount, current);
-        data.setStat(stat, current - toRemove);
-        data.setPotentialPoints(data.getPotentialPoints() + toRemove);
         applyStats(player);
         return true;
     }

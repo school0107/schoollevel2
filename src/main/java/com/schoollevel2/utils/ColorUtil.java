@@ -11,13 +11,8 @@ public class ColorUtil {
     private static final MiniMessage MM = MiniMessage.miniMessage();
     private static final Pattern HEX = Pattern.compile("&#([A-Fa-f0-9]{6})");
 
-    /**
-     * Convert legacy codes (&a, &c) + hex (&#RRGGBB) + MiniMessage tags to legacy string.
-     * For MiniMessage-based API (Paper 1.21), we prefer returning Component.
-     */
     public static String color(String input) {
         if (input == null) return "";
-        // Convert & hex to mini tags
         Matcher m = HEX.matcher(input);
         StringBuffer sb = new StringBuffer();
         while (m.find()) {
@@ -25,7 +20,8 @@ public class ColorUtil {
         }
         m.appendTail(sb);
         String out = sb.toString();
-        // Convert legacy & codes to mini
+
+        // Legacy color codes
         out = out.replace("&0", "<black>").replace("&1", "<dark_blue>")
                 .replace("&2", "<dark_green>").replace("&3", "<dark_aqua>")
                 .replace("&4", "<dark_red>").replace("&5", "<dark_purple>")
@@ -36,16 +32,28 @@ public class ColorUtil {
                 .replace("&e", "<yellow>").replace("&f", "<white>")
                 .replace("&k", "<obfuscated>").replace("&l", "<bold>")
                 .replace("&m", "<strikethrough>").replace("&n", "<underlined>")
-                .replace("&o", "<italic>").replace("&r", "<reset>");
-        // Return as MiniMessage string (caller can parse with MM)
+                .replace("&o", "<italic>");
+
+        // Fix <reset> — MiniMessage không có <reset>, thay bằng <white> để tránh lỗi
+        out = out.replace("<reset>", "<white>");
+
         return out;
     }
 
     public static Component mm(String input) {
-        return MM.deserialize(color(input));
+        try {
+            return MM.deserialize(color(input));
+        } catch (Exception e) {
+            // Fallback nếu parse lỗi
+            return Component.text(stripTags(input));
+        }
     }
 
     public static String stripTags(String mini) {
-        return MiniMessage.miniMessage().stripTags(mini);
+        try {
+            return MiniMessage.miniMessage().stripTags(color(mini));
+        } catch (Exception e) {
+            return mini.replaceAll("<[^>]+>", "");
+        }
     }
 }
