@@ -1,0 +1,17 @@
+name: SchoolLevel2
+version: 1.0.0
+main: com.schoollevel2.SchoolLevel2
+api-version: '1.21'
+author: SchoolLevel2
+description: Level & Stats system with potential points
+softdepend: [PlaceholderAPI]
+
+commands:
+  schoollevel:
+    description: Main command for SchoolLevel2
+    usage: /schoollevel help
+    aliases: [sl, slv, schoolvl]
+  stats:
+    description: Open stats menu
+    usage: /stats
+    aliases: [tiemnang, menu]
