@@ -32,12 +32,13 @@ public class StatsManager {
             if (player.getHealth() > target) player.setHealth(target);
         }
 
-        // AGILITY
+        // AGILITY -> speed dùng potion effect
         int agiPoints = data.getStat("agility");
-        double speedPct = agiPoints * plugin.getConfigManager().getStatPerPoint("agility");
+        double speedPct = agiPoints * plugin.getConfigManager().getAgilitySpeedPerPoint();
         player.removePotionEffect(PotionEffectType.SPEED);
-        if (speedPct >= 20.0) {
-            int amplifier = (int) Math.min(4, Math.floor(speedPct / 20.0));
+        double step = plugin.getConfigManager().getSpeedEffectStep();
+        if (step > 0 && speedPct >= step) {
+            int amplifier = (int) Math.min(4, Math.floor(speedPct / step));
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED,
                     Integer.MAX_VALUE, amplifier, true, false, false));
         }
@@ -58,8 +59,14 @@ public class StatsManager {
     public double getDodgeChance(Player player) {
         PlayerData data = plugin.getDataManager().get(player.getUniqueId());
         if (data == null) return 0;
-        double chance = data.getStat("agility") * plugin.getConfigManager().getStatPerPoint("agility");
+        double chance = data.getStat("agility") * plugin.getConfigManager().getAgilityDodgePerPoint();
         return Math.min(chance, plugin.getConfigManager().getDodgeCap());
+    }
+
+    public double getAgilitySpeedPercent(Player player) {
+        PlayerData data = plugin.getDataManager().get(player.getUniqueId());
+        if (data == null) return 0;
+        return data.getStat("agility") * plugin.getConfigManager().getAgilitySpeedPerPoint();
     }
 
     public boolean tryAddStat(Player player, String stat, int amount) {

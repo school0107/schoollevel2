@@ -18,17 +18,18 @@ public class ActionBarTask extends BukkitRunnable {
     @Override
     public void run() {
         tickCounter++;
-        boolean doActionbar = tickCounter % 20 == 0; // every 1 second
-        boolean doStats = tickCounter % 200 == 0; // every 10 seconds reapply agility
+        boolean doActionbar = tickCounter % 20 == 0;
+        boolean doStats = tickCounter % 200 == 0;
+        boolean forceExpBar = tickCounter % 5 == 0; // liên tục ghi đè thanh exp để chống nhiễu
 
         for (Player p : Bukkit.getOnlinePlayers()) {
             PlayerData data = plugin.getDataManager().get(p.getUniqueId());
             if (data == null) continue;
 
-            if (doActionbar) {
+            if (doActionbar && plugin.getConfigManager().isShowActionbar()) {
                 String bar = plugin.getLevelManager().buildExpBar(data);
                 long needed = plugin.getConfigManager().getExpForLevel(data.getLevel());
-                String raw = plugin.getConfigManager().getActionbar()
+                String raw = plugin.getConfigManager().getCfg().getString("actionbar", "")
                         .replace("{level}", String.valueOf(data.getLevel()))
                         .replace("{exp_bar}", bar)
                         .replace("{current}", String.valueOf(data.getExp()))
@@ -38,8 +39,12 @@ public class ActionBarTask extends BukkitRunnable {
                 p.sendActionBar(c);
             }
 
-            if (doStats) {
+            // Ghi đè thanh exp liên tục để chống vanilla exp nhảy vào
+            if (forceExpBar && plugin.getConfigManager().isShowLevelBar()) {
                 plugin.getLevelManager().applyLevelBar(p, data);
+            }
+
+            if (doStats) {
                 plugin.getStatsManager().applyStats(p);
             }
         }

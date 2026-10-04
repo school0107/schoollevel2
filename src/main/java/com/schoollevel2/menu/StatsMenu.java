@@ -40,99 +40,107 @@ public class StatsMenu {
         ItemStack fill = ItemUtil.make(filler, " ", Collections.emptyList());
         for (int i = 0; i < 54; i++) inv.setItem(i, fill);
 
-        // Info item ở slot 4
         long needed = cfg.getExpForLevel(data.getLevel());
         List<String> infoLore = List.of(
                 "",
-                "<gray>▸ Cấp hiện tại: <aqua>" + data.getLevel() + "</aqua><gray>/<yellow>" + cfg.getMaxLevel() + "</yellow>",
-                "<gray>▸ Kinh nghiệm: <green>" + data.getExp() + "</green><gray>/<yellow>" + needed + "</yellow>",
-                "<gray>▸ Điểm tiềm năng: <gold>" + data.getPotentialPoints() + "</gold>",
+                "<gray>▸ Cấp: <aqua>" + data.getLevel() + "</aqua> <gray>/ <yellow>" + cfg.getMaxLevel(),
+                "<gray>▸ Kinh nghiệm: <green>" + data.getExp() + "</green> <gray>/ <yellow>" + needed,
+                "<gray>▸ Điểm tiềm năng: <gold>" + data.getPotentialPoints(),
                 "",
                 "<dark_gray>Cày quặng để nhận thêm exp!",
                 "<dark_gray>Mỗi cấp nhận +" + cfg.getPointsPerLevel() + " điểm."
         );
         inv.setItem(4, ItemUtil.make(Material.NETHER_STAR,
-                "<gradient:#FFD700:#FF8C00><bold>✦ THÔNG TIN CỦA BẠN ✦</bold></gradient>",
-                infoLore));
-
-        // 4 stat items
-        int meleeMax = cfg.getStatMaxPoints("melee");
-        int rangedMax = cfg.getStatMaxPoints("ranged");
-        int healthMax = cfg.getStatMaxPoints("health");
-        int agilityMax = cfg.getStatMaxPoints("agility");
-
-        double meleePer = cfg.getStatPerPoint("melee");
-        double rangedPer = cfg.getStatPerPoint("ranged");
-        double healthPer = cfg.getStatPerPoint("health");
-        double agilityPer = cfg.getStatPerPoint("agility");
-        double dodgeCap = cfg.getDodgeCap();
+                "<gradient:#FFD700:#FF8C00><bold>✦ THÔNG TIN CỦA BẠN ✦</bold></gradient>", infoLore));
 
         // MELEE
         addStatItem(inv, p, data, SLOTS[0], "melee",
                 "<gradient:#FF5555:#AA0000><bold>⚔ SÁT THƯƠNG CẬN CHIẾN</bold></gradient>",
-                meleeMax, meleePer,
+                cfg.getStatMaxPoints("melee"), cfg.getStatPerPoint("melee"),
                 List.of(
                         "<gray>Tăng sát thương khi dùng:",
-                        "<white>• Kiếm, Rìu, Cuốc, Xẻng",
-                        "<white>• Đánh tay không",
+                        "<white> • Kiếm, Rìu, Cuốc, Xẻng",
+                        "<white> • Đánh tay không",
                         "",
-                        "<gray>Mỗi điểm: <green>+" + String.format("%.1f", meleePer) + " ❤ sát thương"
-                ));
+                        "<gray>Mỗi điểm: <green>+" + fmt(cfg.getStatPerPoint("melee")) + " ❤ sát thương"
+                ), "dmg");
 
         // RANGED
         addStatItem(inv, p, data, SLOTS[1], "ranged",
                 "<gradient:#55FF55:#00AA00><bold>🏹 SÁT THƯƠNG TẦM XA</bold></gradient>",
-                rangedMax, rangedPer,
+                cfg.getStatMaxPoints("ranged"), cfg.getStatPerPoint("ranged"),
                 List.of(
                         "<gray>Tăng sát thương khi dùng:",
-                        "<white>• Cung, Nỏ",
-                        "<white>• Đinh ba (ném)",
-                        "<white>• Trứng, Tuyết, Ngọc Ender",
+                        "<white> • Cung, Nỏ",
+                        "<white> • Đinh ba (ném)",
+                        "<white> • Trứng, Tuyết, Ngọc Ender",
                         "",
-                        "<gray>Mỗi điểm: <green>+" + String.format("%.1f", rangedPer) + " ❤ sát thương"
-                ));
+                        "<gray>Mỗi điểm: <green>+" + fmt(cfg.getStatPerPoint("ranged")) + " ❤ sát thương"
+                ), "dmg");
 
         // HEALTH
         addStatItem(inv, p, data, SLOTS[2], "health",
                 "<gradient:#FF5555:#FFAA00><bold>❤ MÁU TỐI ĐA</bold></gradient>",
-                healthMax, healthPer,
+                cfg.getStatMaxPoints("health"), cfg.getStatPerPoint("health"),
                 List.of(
                         "<gray>Tăng lượng máu tối đa:",
-                        "<white>• Hiển thị trên thanh máu",
-                        "<white>• Áp dụng ngay lập tức",
+                        "<white> • Hiển thị trên thanh máu",
+                        "<white> • Áp dụng ngay lập tức",
                         "",
-                        "<gray>Mỗi điểm: <green>+" + String.format("%.1f", healthPer) + " ❤ máu",
+                        "<gray>Mỗi điểm: <green>+" + fmt(cfg.getStatPerPoint("health")) + " ❤ máu",
                         "<gray>(1 ❤ = 2 HP)"
-                ));
+                ), "hp");
 
-        // AGILITY
-        addStatItem(inv, p, data, SLOTS[3], "agility",
-                "<gradient:#55FFFF:#0055FF><bold>💨 NHANH NHẸN</bold></gradient>",
-                agilityMax, agilityPer,
-                List.of(
-                        "<gray>Tăng tốc độ & khả năng né:",
-                        "<white>• Tốc độ chạy nhanh hơn",
-                        "<white>• Tỉ lệ né đòn vật lý (cận + xa)",
-                        "<white>• Cap né: <yellow>" + String.format("%.0f", dodgeCap) + "%</yellow>",
-                        "",
-                        "<gray>Mỗi điểm: <green>+" + String.format("%.1f", agilityPer) + "% tốc độ",
-                        "<gray>Và <green>+" + String.format("%.1f", agilityPer) + "% tỉ lệ né"
-                ));
+        // AGILITY (chi tiết)
+        int agiMax = cfg.getStatMaxPoints("agility");
+        int agiCurrent = data.getStat("agility");
+        double speedPct = agiCurrent * cfg.getAgilitySpeedPerPoint();
+        double dodgePct = Math.min(agiCurrent * cfg.getAgilityDodgePerPoint(), cfg.getDodgeCap());
+        double speedMax = agiMax * cfg.getAgilitySpeedPerPoint();
+        double dodgeMax = Math.min(agiMax * cfg.getAgilityDodgePerPoint(), cfg.getDodgeCap());
+
+        List<String> agiLore = new ArrayList<>();
+        agiLore.add("<gray>Chỉ số tổng hợp: <aqua>Tốc độ</aqua> + <aqua>Né tránh</aqua>");
+        agiLore.add("");
+        agiLore.add("<yellow>⚡ TỐC ĐỘ CHẠY");
+        agiLore.add("<gray> • Mỗi điểm: <green>+" + fmt(cfg.getAgilitySpeedPerPoint()) + "% tốc độ");
+        agiLore.add("<gray> • Hiện tại: <green>+" + fmt(speedPct) + "%");
+        agiLore.add("<gray> • Tối đa: <green>+" + fmt(speedMax) + "% (khi full " + agiMax + " điểm)");
+        agiLore.add("");
+        agiLore.add("<yellow>💨 TỈ LỆ NÉ ĐÒN");
+        agiLore.add("<gray> • Mỗi điểm: <green>+" + fmt(cfg.getAgilityDodgePerPoint()) + "% né");
+        agiLore.add("<gray> • Hiện tại: <green>" + fmt(dodgePct) + "%");
+        agiLore.add("<gray> • Trần né: <red>" + fmt(cfg.getDodgeCap()) + "%</red> <dark_gray>(cap)");
+        agiLore.add("<gray> • Áp dụng cho: <white>đòn cận chiến & tầm xa");
+        agiLore.add("<gray> • Khi né: hiện hạt mây + huỷ sát thương");
+        agiLore.add("");
+        agiLore.add("<dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        agiLore.add("<gray>Cấp chỉ số: <aqua>" + agiCurrent + "</aqua> <gray>/ <yellow>" + agiMax);
+        agiLore.add("<gray>Điểm khả dụng: <gold>" + data.getPotentialPoints());
+        agiLore.add("<dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        agiLore.add("");
+        agiLore.add("<yellow>▶ Click trái <gray>: +1 điểm");
+        agiLore.add("<yellow>▶ Shift + Click trái <gray>: +10 điểm");
+        agiLore.add("<red>✖ Không thể giảm (dùng item Reset)");
+
+        inv.setItem(SLOTS[3], buildHead(p,
+                "<gradient:#55FFFF:#0055FF><bold>💨 NHANH NHẸN</bold></gradient>", agiLore));
 
         p.openInventory(inv);
     }
 
     private void addStatItem(Inventory inv, Player p, PlayerData data, int slot, String key,
-                             String displayName, int max, double per, List<String> desc) {
+                             String displayName, int max, double per, List<String> desc, String type) {
         int current = data.getStat(key);
         double value = current * per;
-        String valueStr;
-        if (key.equals("health")) valueStr = "+" + String.format("%.1f", value) + " ❤";
-        else if (key.equals("agility")) valueStr = "+" + String.format("%.1f", value) + "% speed / dodge";
-        else valueStr = "+" + String.format("%.1f", value) + " ❤ dmg";
 
-        List<String> lore = new ArrayList<>();
-        lore.addAll(desc);
+        String valueStr = switch (type) {
+            case "hp" -> "+" + fmt(value) + " ❤";
+            case "dmg" -> "+" + fmt(value) + " ❤ sát thương";
+            default -> "+" + fmt(value);
+        };
+
+        List<String> lore = new ArrayList<>(desc);
         lore.add("");
         lore.add("<dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("<gray>Cấp chỉ số: <aqua>" + current + "</aqua> <gray>/ <yellow>" + max);
@@ -144,6 +152,10 @@ public class StatsMenu {
         lore.add("<yellow>▶ Shift + Click trái <gray>: +10 điểm");
         lore.add("<red>✖ Không thể giảm (dùng item Reset)");
 
+        inv.setItem(slot, buildHead(p, displayName, lore));
+    }
+
+    private ItemStack buildHead(Player p, String displayName, List<String> lore) {
         ItemStack item = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) item.getItemMeta();
         if (meta != null) {
@@ -154,7 +166,12 @@ public class StatsMenu {
             meta.lore(lc);
             item.setItemMeta(meta);
         }
-        inv.setItem(slot, item);
+        return item;
+    }
+
+    private String fmt(double d) {
+        if (d == Math.floor(d)) return String.valueOf((int) d);
+        return String.format("%.2f", d);
     }
 
     public void handleClick(Player p, int slot, boolean shift, boolean right) {
@@ -165,7 +182,6 @@ public class StatsMenu {
             if (slot == SLOTS[i]) {
                 String key = STAT_KEYS[i];
                 if (right) {
-                    // Chặn hẳn giảm điểm
                     p.sendMessage(ColorUtil.mm("<red>✖ Không thể giảm chỉ số! Dùng <yellow>Reset Item</yellow> để hoàn lại toàn bộ."));
                     return;
                 }
@@ -178,10 +194,7 @@ public class StatsMenu {
                         p.sendMessage(plugin.getConfigManager().msg("no-points"));
                     }
                 } else {
-                    // Sound feedback
-                    try {
-                        p.playSound(p.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 2f);
-                    } catch (Exception ignored) {}
+                    try { p.playSound(p.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 2f); } catch (Exception ignored) {}
                 }
                 open(p);
                 return;

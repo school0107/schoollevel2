@@ -21,7 +21,6 @@ public class ColorUtil {
         m.appendTail(sb);
         String out = sb.toString();
 
-        // Legacy color codes
         out = out.replace("&0", "<black>").replace("&1", "<dark_blue>")
                 .replace("&2", "<dark_green>").replace("&3", "<dark_aqua>")
                 .replace("&4", "<dark_red>").replace("&5", "<dark_purple>")
@@ -34,8 +33,9 @@ public class ColorUtil {
                 .replace("&m", "<strikethrough>").replace("&n", "<underlined>")
                 .replace("&o", "<italic>");
 
-        // Fix <reset> — MiniMessage không có <reset>, thay bằng <white> để tránh lỗi
-        out = out.replace("<reset>", "<white>");
+        // <reset> KHÔNG tồn tại trong MiniMessage -> thay bằng đóng tất cả tag
+        // Dùng <reset> legacy sẽ bị hiển thị thô -> xóa hẳn
+        out = out.replace("<reset>", "").replace("&r", "");
 
         return out;
     }
@@ -44,7 +44,6 @@ public class ColorUtil {
         try {
             return MM.deserialize(color(input));
         } catch (Exception e) {
-            // Fallback nếu parse lỗi
             return Component.text(stripTags(input));
         }
     }

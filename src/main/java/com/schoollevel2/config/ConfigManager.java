@@ -17,12 +17,22 @@ public class ConfigManager {
     private int startLevel;
     private int actionbarInterval;
     private int saveInterval;
+    private boolean showActionbar;
+    private boolean showLevelBar;
+    private boolean showTitleOnLevelup;
+    private boolean showChatOnLevelup;
+
     private double expBase;
     private double expExponent;
     private Map<Material, Integer> miningExp;
+
     private Map<String, Double> statPerPoint;
     private Map<String, Integer> statMaxPoints;
+    private double agilitySpeedPerPoint;
+    private double agilityDodgePerPoint;
     private double dodgeCap;
+    private double speedEffectStep;
+
     private Material resetMaterial;
     private String resetName;
     private List<String> resetLore;
@@ -42,6 +52,10 @@ public class ConfigManager {
         this.startLevel = cfg.getInt("settings.start-level", 1);
         this.actionbarInterval = cfg.getInt("settings.actionbar-interval-ticks", 20);
         this.saveInterval = cfg.getInt("settings.save-interval-seconds", 300);
+        this.showActionbar = cfg.getBoolean("settings.show-actionbar", true);
+        this.showLevelBar = cfg.getBoolean("settings.show-level-bar", true);
+        this.showTitleOnLevelup = cfg.getBoolean("settings.show-title-on-levelup", true);
+        this.showChatOnLevelup = cfg.getBoolean("settings.show-chat-on-levelup", true);
 
         this.expBase = cfg.getDouble("exp-formula.base", 100);
         this.expExponent = cfg.getDouble("exp-formula.exponent", 1.5);
@@ -57,11 +71,16 @@ public class ConfigManager {
 
         this.statPerPoint = new HashMap<>();
         this.statMaxPoints = new HashMap<>();
-        for (String s : List.of("melee", "ranged", "health", "agility")) {
+        for (String s : List.of("melee", "ranged", "health")) {
             statPerPoint.put(s, cfg.getDouble("stats." + s + ".per-point", 1.0));
             statMaxPoints.put(s, cfg.getInt("stats." + s + ".max-points", 100));
         }
-        this.dodgeCap = cfg.getDouble("stats.agility.dodge-chance-cap", 50.0);
+        // Agility tách riêng
+        this.agilitySpeedPerPoint = cfg.getDouble("stats.agility.speed-per-point", 1.0);
+        this.agilityDodgePerPoint = cfg.getDouble("stats.agility.dodge-per-point", 0.25);
+        this.statMaxPoints.put("agility", cfg.getInt("stats.agility.max-points", 20));
+        this.dodgeCap = cfg.getDouble("stats.agility.dodge-chance-cap", 5.0);
+        this.speedEffectStep = cfg.getDouble("stats.agility.speed-effect-step", 20.0);
 
         this.resetMaterial = Material.matchMaterial(cfg.getString("reset-item.material", "NETHER_STAR"));
         if (resetMaterial == null) resetMaterial = Material.NETHER_STAR;
@@ -84,20 +103,23 @@ public class ConfigManager {
         return ColorUtil.color(prefix + msg);
     }
 
-    public String raw(String path) {
-        return ColorUtil.color(cfg.getString(path, ""));
-    }
-
-    public String getActionbar() { return cfg.getString("actionbar", ""); }
-
     public int getMaxLevel() { return maxLevel; }
     public int getPointsPerLevel() { return pointsPerLevel; }
     public int getStartLevel() { return startLevel; }
     public int getActionbarInterval() { return Math.max(1, actionbarInterval); }
     public int getSaveInterval() { return Math.max(30, saveInterval); }
+    public boolean isShowActionbar() { return showActionbar; }
+    public boolean isShowLevelBar() { return showLevelBar; }
+    public boolean isShowTitleOnLevelup() { return showTitleOnLevelup; }
+    public boolean isShowChatOnLevelup() { return showChatOnLevelup; }
+
     public double getStatPerPoint(String s) { return statPerPoint.getOrDefault(s, 1.0); }
     public int getStatMaxPoints(String s) { return statMaxPoints.getOrDefault(s, 100); }
+    public double getAgilitySpeedPerPoint() { return agilitySpeedPerPoint; }
+    public double getAgilityDodgePerPoint() { return agilityDodgePerPoint; }
     public double getDodgeCap() { return dodgeCap; }
+    public double getSpeedEffectStep() { return speedEffectStep; }
+
     public Material getResetMaterial() { return resetMaterial; }
     public String getResetName() { return resetName; }
     public List<String> getResetLore() { return resetLore; }
