@@ -1,0 +1,111 @@
+# =====================================================
+#  SchoolLevel2 - Configuration
+#  RGB Color: <color:#RRGGBB>text</color>
+#  Legacy: &a &b &c ...
+# =====================================================
+
+settings:
+  max-level: 200
+  points-per-level: 2
+  start-level: 1
+  actionbar-interval-ticks: 20
+  save-interval-seconds: 300
+  auto-save-on-quit: true
+
+# Cấp độ yêu cầu để lên level tiếp theo
+# Công thức: exp = base * level^exponent
+exp-formula:
+  base: 100
+  exponent: 1.5
+
+# Kinh nghiệm nhận khi đào quặng
+mining-exp:
+  COAL_ORE: 5
+  DEEPSLATE_COAL_ORE: 5
+  IRON_ORE: 10
+  DEEPSLATE_IRON_ORE: 10
+  COPPER_ORE: 8
+  DEEPSLATE_COPPER_ORE: 8
+  GOLD_ORE: 15
+  DEEPSLATE_GOLD_ORE: 15
+  REDSTONE_ORE: 12
+  DEEPSLATE_REDSTONE_ORE: 12
+  LAPIS_ORE: 18
+  DEEPSLATE_LAPIS_ORE: 18
+  DIAMOND_ORE: 40
+  DEEPSLATE_DIAMOND_ORE: 40
+  EMERALD_ORE: 60
+  DEEPSLATE_EMERALD_ORE: 60
+  NETHER_GOLD_ORE: 20
+  NETHER_QUARTZ_ORE: 15
+  ANCIENT_DEBRIS: 150
+
+# Chỉ số tăng mỗi điểm tiềm năng
+stats:
+  melee:
+    per-point: 1.0       # +1 sát thương cận chiến mỗi điểm
+    max-points: 100
+  ranged:
+    per-point: 1.0       # +1 sát thương tầm xa mỗi điểm
+    max-points: 100
+  health:
+    per-point: 2.0       # +2 HP (1 tim) mỗi điểm
+    max-points: 50
+  agility:
+    per-point: 1.0       # +1% speed + 1% dodge mỗi điểm
+    max-points: 50
+    dodge-chance-cap: 50.0  # max 50% né tránh
+
+# Reset item
+reset-item:
+  material: NETHER_STAR
+  name: "<gradient:#FF0000:#FFAA00><bold>✦ RESET STATS ✦</bold></gradient>"
+  lore:
+    - "<gray>Nhấn chuột phải để reset toàn bộ chỉ số."
+    - "<red>⚠ Sẽ hoàn trả toàn bộ điểm tiềm năng!"
+  refund-points: true
+
+# Menu
+menu:
+  title: "<gradient:#00C9FF:#92FE9D><bold>✦ TIỀM NĂNG ✦</bold></gradient>"
+  rows: 6
+  filler-material: GRAY_STAINED_GLASS_PANE
+  stats-item:
+    material: PLAYER_HEAD
+    name: "<gradient:#FFD700:#FF8C00><bold>{stat_name}</bold></gradient>"
+    lore:
+      - ""
+      - "<gray>▸ Cấp hiện tại: <aqua>{current}</aqua>/<yellow>{max}</yellow>"
+      - "<gray>▸ Hiệu ứng: <green>+{value}</green>"
+      - "<gray>▸ Điểm khả dụng: <gold>{points}</gold>"
+      - ""
+      - "<yellow>▶ Click trái <gray>để +1 điểm"
+      - "<yellow>▶ Shift + Click trái <gray>để +10 điểm"
+      - "<yellow>▶ Click phải <gray>để -1 điểm (hoàn lại)"
+
+# Messages
+messages:
+  prefix: "<gradient:#00C9FF:#92FE9D>[SchoolLevel2]</gradient> <reset>"
+  no-permission: "<red>✖ Bạn không có quyền thực hiện lệnh này!"
+  player-only: "<red>✖ Lệnh này chỉ dành cho người chơi!"
+  level-up: "<gradient:#FFD700:#FF8C00><bold>✦ LEVEL UP! ✦</bold></gradient> <gray>Bạn đã đạt cấp <yellow>{level}</yellow>! <green>+{points} điểm tiềm năng</green>"
+  max-level: "<yellow>Bạn đã đạt cấp tối đa!"
+  no-points: "<red>✖ Bạn không có điểm tiềm năng!"
+  stats-maxed: "<red>✖ Chỉ số này đã đạt tối đa!"
+  reset-success: "<green>✔ Đã reset toàn bộ chỉ số! Hoàn trả <yellow>{points}</yellow> điểm."
+  exp-gained: "<green>+{exp} exp</green> <gray>({current}/{needed})"
+  player-not-found: "<red>✖ Không tìm thấy người chơi!"
+  invalid-number: "<red>✖ Số không hợp lệ!"
+  reload-success: "<green>✔ Đã reload config!"
+  stats-added: "<green>✔ Đã cộng <yellow>{amount}</yellow> điểm vào <aqua>{stat}</aqua>"
+  level-set: "<green>✔ Đã set cấp của <yellow>{player}</yellow> thành <aqua>{level}</aqua>"
+  level-added: "<green>✔ Đã cộng <yellow>{amount}</yellow> cấp cho <yellow>{player}</yellow>"
+  exp-added: "<green>✔ Đã cộng <yellow>{amount}</yellow> exp cho <yellow>{player}</yellow>"
+  reset-item-given: "<green>✔ Đã nhận item reset!"
+
+# Actionbar format
+actionbar: "<gradient:#00C9FF:#92FE9D>✦ Lv.{level}</gradient> <dark_gray>|</dark_gray> <yellow>{exp_bar}</yellow> <gray>{current}/{needed}</gray> <dark_gray>|</dark_gray> <gold>💎 {points} điểm</gold>"
+
+# Level bar overlay (dùng thanh kinh nghiệm minecraft)
+level-bar:
+  enabled: true
