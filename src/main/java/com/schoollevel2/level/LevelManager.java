@@ -9,6 +9,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.time.Duration;
+import java.util.Map;
 
 public class LevelManager {
 
@@ -49,14 +50,16 @@ public class LevelManager {
 
         if (leveled) {
             int points = levelsGained * plugin.getConfigManager().getPointsPerLevel();
-            String chatRaw = plugin.getConfigManager().msg("level-up")
-                    .replace("{level}", String.valueOf(data.getLevel()))
-                    .replace("{points}", String.valueOf(points));
+            int finalLevel = data.getLevel();
+
             if (plugin.getConfigManager().isShowChatOnLevelup()) {
-                player.sendMessage(chatRaw);
+                plugin.getConfigManager().send(player, "level-up", Map.of(
+                        "level", String.valueOf(finalLevel),
+                        "points", String.valueOf(points)
+                ));
             }
             if (plugin.getConfigManager().isShowTitleOnLevelup()) {
-                sendLevelUpTitle(player, data.getLevel(), points);
+                sendLevelUpTitle(player, finalLevel, points);
             }
             try {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1.5f);
@@ -69,7 +72,7 @@ public class LevelManager {
 
     private void sendLevelUpTitle(Player player, int level, int points) {
         var cfg = plugin.getConfigManager().getCfg();
-        String titleStr = cfg.getString("levelup-title.title", "<gold>LEVEL UP");
+        String titleStr = cfg.getString("levelup-title.title", "&6&lLEVEL UP");
         String subStr = cfg.getString("levelup-title.subtitle", "");
         int fadeIn = cfg.getInt("levelup-title.fade-in", 10);
         int stay = cfg.getInt("levelup-title.stay", 40);
@@ -96,9 +99,7 @@ public class LevelManager {
         data.setLevel(Math.max(1, Math.min(level, plugin.getConfigManager().getMaxLevel())));
         data.setExp(0);
         int gained = data.getLevel() - old;
-        if (gained > 0) {
-            data.addPotentialPoints(gained * plugin.getConfigManager().getPointsPerLevel());
-        }
+        if (gained > 0) data.addPotentialPoints(gained * plugin.getConfigManager().getPointsPerLevel());
         applyLevelBar(player, data);
         plugin.getStatsManager().applyStats(player);
     }
@@ -117,15 +118,8 @@ public class LevelManager {
         applyLevelBar(player, data);
     }
 
-    /**
-     * Thanh exp TUYỆT ĐỐI: dùng setLevel + setExp của Bukkit
-     * - setLevel: ghi đè con số cấp hiển thị
-     * - setExp: ghi đè thanh bar (nhưng client vanilla có thể hiển thị exp gốc)
-     * Để "tuyệt đối" không bị nhiễu, ta set mỗi tick hoặc reset vanilla exp.
-     */
     public void applyLevelBar(Player player, PlayerData data) {
         if (!plugin.getConfigManager().isShowLevelBar()) {
-            // Nếu tắt, xóa thanh exp
             player.setLevel(0);
             player.setExp(0f);
             return;
@@ -145,9 +139,9 @@ public class LevelManager {
         int bars = 20;
         int filled = needed > 0 ? (int) Math.min(bars, (data.getExp() * bars) / needed) : 0;
         StringBuilder sb = new StringBuilder();
-        sb.append("<green>");
+        sb.append("&a");
         for (int i = 0; i < filled; i++) sb.append("█");
-        sb.append("<dark_gray>");
+        sb.append("&8");
         for (int i = filled; i < bars; i++) sb.append("█");
         return ColorUtil.color(sb.toString());
     }

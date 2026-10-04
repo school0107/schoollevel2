@@ -12,6 +12,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Map;
+
 public class MenuListener implements Listener {
 
     private final SchoolLevel2 plugin;
@@ -40,11 +42,10 @@ public class MenuListener implements Listener {
             return;
 
         e.setCancelled(true);
-
         int refund = plugin.getStatsManager().resetStats(p);
-        p.sendMessage(plugin.getConfigManager().msg("reset-success").replace("{points}", String.valueOf(refund)));
 
-        // Tiêu thụ 1 item
+        plugin.getConfigManager().send(p, "reset-success", Map.of("points", String.valueOf(refund)));
+
         if (item.getAmount() > 1) item.setAmount(item.getAmount() - 1);
         else p.getInventory().setItemInMainHand(null);
 

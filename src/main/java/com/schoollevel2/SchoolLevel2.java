@@ -8,6 +8,7 @@ import com.schoollevel2.listeners.*;
 import com.schoollevel2.menu.StatsMenu;
 import com.schoollevel2.stats.StatsManager;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class SchoolLevel2 extends JavaPlugin {
@@ -31,10 +32,9 @@ public class SchoolLevel2 extends JavaPlugin {
         this.statsManager = new StatsManager(this);
         this.statsMenu = new StatsMenu(this);
 
-        // Load all data
         dataManager.loadAll();
 
-        // Register commands
+        // Commands
         var cmd = getCommand("schoollevel");
         if (cmd != null) {
             SchoolLevelCommand executor = new SchoolLevelCommand(this);
@@ -44,8 +44,8 @@ public class SchoolLevel2 extends JavaPlugin {
         var statsCmd = getCommand("stats");
         if (statsCmd != null) {
             statsCmd.setExecutor((sender, command, label, args) -> {
-                if (!(sender instanceof org.bukkit.entity.Player p)) {
-                    sender.sendMessage(configManager.msg("player-only"));
+                if (!(sender instanceof Player p)) {
+                    configManager.send(sender, "player-only");
                     return true;
                 }
                 statsMenu.open(p);
@@ -53,16 +53,15 @@ public class SchoolLevel2 extends JavaPlugin {
             });
         }
 
-        // Register listeners
+        // Listeners
         Bukkit.getPluginManager().registerEvents(new MiningListener(this), this);
         Bukkit.getPluginManager().registerEvents(new CombatListener(this), this);
         Bukkit.getPluginManager().registerEvents(new JoinQuitListener(this), this);
         Bukkit.getPluginManager().registerEvents(new MenuListener(this), this);
 
-        // Start actionbar task
+        // Tasks
         new ActionBarTask(this).runTaskTimer(this, 0L, configManager.getActionbarInterval());
 
-        // Auto save task
         long saveInterval = configManager.getSaveInterval() * 20L;
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> dataManager.saveAll(), saveInterval, saveInterval);
 
@@ -71,9 +70,7 @@ public class SchoolLevel2 extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (dataManager != null) {
-            dataManager.saveAll();
-        }
+        if (dataManager != null) dataManager.saveAll();
         getLogger().info("SchoolLevel2 disabled!");
     }
 
