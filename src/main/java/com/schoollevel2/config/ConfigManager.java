@@ -24,6 +24,10 @@ public class ConfigManager {
     private Map<String, Integer> statMaxPoints;
     private double agilitySpeedPerPoint, agilityDodgePerPoint, dodgeCap, speedEffectStep;
 
+    // Chakra
+    private double chakraCritPerPoint, chakraCritCap, chakraCritMultiplier;
+    private double chakraHealthPerPoint, chakraSpeedPerPoint, chakraDodgePerPoint;
+
     private Material resetMaterial;
     private String resetName;
     private List<String> resetLore;
@@ -38,22 +42,19 @@ public class ConfigManager {
         plugin.reloadConfig();
         this.cfg = plugin.getConfig();
 
-        // ----- Settings -----
         this.maxLevel = cfg.getInt("settings.max-level", 200);
         this.pointsPerLevel = cfg.getInt("settings.points-per-level", 2);
         this.startLevel = cfg.getInt("settings.start-level", 1);
-        this.actionbarInterval = cfg.getInt("settings.actionbar-interval-ticks", 20);
+        this.actionbarInterval = cfg.getInt("settings.actionbar-interval-ticks", 10);
         this.saveInterval = cfg.getInt("settings.save-interval-seconds", 300);
         this.showActionbar = cfg.getBoolean("settings.show-actionbar", true);
         this.showLevelBar = cfg.getBoolean("settings.show-level-bar", true);
         this.showTitleOnLevelup = cfg.getBoolean("settings.show-title-on-levelup", true);
         this.showChatOnLevelup = cfg.getBoolean("settings.show-chat-on-levelup", true);
 
-        // ----- Exp formula -----
         this.expBase = cfg.getDouble("exp-formula.base", 100);
         this.expExponent = cfg.getDouble("exp-formula.exponent", 1.5);
 
-        // ----- Mining exp -----
         this.miningExp = new HashMap<>();
         var section = cfg.getConfigurationSection("mining-exp");
         if (section != null) {
@@ -63,7 +64,6 @@ public class ConfigManager {
             }
         }
 
-        // ----- Stats -----
         this.statPerPoint = new HashMap<>();
         this.statMaxPoints = new HashMap<>();
         for (String s : List.of("melee", "ranged", "health")) {
@@ -76,17 +76,20 @@ public class ConfigManager {
         this.dodgeCap = cfg.getDouble("stats.agility.dodge-chance-cap", 5.0);
         this.speedEffectStep = cfg.getDouble("stats.agility.speed-effect-step", 20.0);
 
-        // ----- Reset item -----
+        this.statMaxPoints.put("chakra", cfg.getInt("stats.chakra.max-points", 50));
+        this.chakraCritPerPoint = cfg.getDouble("stats.chakra.crit-chance-per-point", 0.5);
+        this.chakraCritCap = cfg.getDouble("stats.chakra.crit-chance-cap", 25.0);
+        this.chakraCritMultiplier = cfg.getDouble("stats.chakra.crit-damage-multiplier", 1.5);
+        this.chakraHealthPerPoint = cfg.getDouble("stats.chakra.health-per-point", 1.0);
+        this.chakraSpeedPerPoint = cfg.getDouble("stats.chakra.speed-per-point", 0.3);
+        this.chakraDodgePerPoint = cfg.getDouble("stats.chakra.dodge-per-point", 0.1);
+
         this.resetMaterial = Material.matchMaterial(cfg.getString("reset-item.material", "NETHER_STAR"));
         if (resetMaterial == null) resetMaterial = Material.NETHER_STAR;
         this.resetName = cfg.getString("reset-item.name", "&cReset");
         this.resetLore = cfg.getStringList("reset-item.lore");
         this.resetRefund = cfg.getBoolean("reset-item.refund-points", true);
     }
-
-    // =====================================================
-    //  Exp / Mining
-    // =====================================================
 
     public long getExpForLevel(int level) {
         return (long) (expBase * Math.pow(level, expExponent));
@@ -96,22 +99,13 @@ public class ConfigManager {
         return miningExp.getOrDefault(mat, 0);
     }
 
-    // =====================================================
-    //  Message — LUÔN dùng Component
-    // =====================================================
-
-    /**
-     * Lấy Component đã parse màu (hỗ trợ &, &#RRGGBB, MiniMessage tag)
-     */
+    // -------- Message --------
     public Component msgComponent(String key) {
         String prefix = cfg.getString("messages.prefix", "");
         String msg = cfg.getString("messages." + key, "&cMissing message: " + key);
         return ColorUtil.mm(prefix + msg);
     }
 
-    /**
-     * Lấy Component có thay placeholder {key}
-     */
     public Component msgComponent(String key, Map<String, String> placeholders) {
         String prefix = cfg.getString("messages.prefix", "");
         String msg = cfg.getString("messages." + key, "&cMissing message: " + key);
@@ -124,21 +118,10 @@ public class ConfigManager {
         return ColorUtil.mm(full);
     }
 
-    /**
-     * Gửi thẳng Component cho sender — KHÔNG còn tag thô
-     */
-    public void send(CommandSender sender, String key) {
-        sender.sendMessage(msgComponent(key));
-    }
+    public void send(CommandSender sender, String key) { sender.sendMessage(msgComponent(key)); }
+    public void send(CommandSender sender, String key, Map<String, String> ph) { sender.sendMessage(msgComponent(key, ph)); }
 
-    public void send(CommandSender sender, String key, Map<String, String> placeholders) {
-        sender.sendMessage(msgComponent(key, placeholders));
-    }
-
-    // =====================================================
-    //  Getters
-    // =====================================================
-
+    // -------- Getters --------
     public int getMaxLevel() { return maxLevel; }
     public int getPointsPerLevel() { return pointsPerLevel; }
     public int getStartLevel() { return startLevel; }
@@ -155,6 +138,13 @@ public class ConfigManager {
     public double getAgilityDodgePerPoint() { return agilityDodgePerPoint; }
     public double getDodgeCap() { return dodgeCap; }
     public double getSpeedEffectStep() { return speedEffectStep; }
+
+    public double getChakraCritPerPoint() { return chakraCritPerPoint; }
+    public double getChakraCritCap() { return chakraCritCap; }
+    public double getChakraCritMultiplier() { return chakraCritMultiplier; }
+    public double getChakraHealthPerPoint() { return chakraHealthPerPoint; }
+    public double getChakraSpeedPerPoint() { return chakraSpeedPerPoint; }
+    public double getChakraDodgePerPoint() { return chakraDodgePerPoint; }
 
     public Material getResetMaterial() { return resetMaterial; }
     public String getResetName() { return resetName; }

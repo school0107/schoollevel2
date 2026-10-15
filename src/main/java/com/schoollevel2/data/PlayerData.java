@@ -23,6 +23,7 @@ public class PlayerData {
         stats.put("ranged", 0);
         stats.put("health", 0);
         stats.put("agility", 0);
+        stats.put("chakra", 0);
     }
 
     public UUID getUuid() { return uuid; }

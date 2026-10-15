@@ -1,7 +1,6 @@
 package com.schoollevel2.data;
 
 import com.schoollevel2.SchoolLevel2;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -15,15 +14,15 @@ public class DataManager {
     private final Map<UUID, PlayerData> cache = new ConcurrentHashMap<>();
     private final File dataFolder;
 
+    private static final String[] STAT_KEYS = {"melee", "ranged", "health", "agility", "chakra"};
+
     public DataManager(SchoolLevel2 plugin) {
         this.plugin = plugin;
         this.dataFolder = new File(plugin.getDataFolder(), "playerdata");
         if (!dataFolder.exists()) dataFolder.mkdirs();
     }
 
-    public PlayerData get(UUID uuid) {
-        return cache.get(uuid);
-    }
+    public PlayerData get(UUID uuid) { return cache.get(uuid); }
 
     public PlayerData getOrCreate(UUID uuid, String name) {
         return cache.computeIfAbsent(uuid, k -> {
@@ -45,7 +44,7 @@ public class DataManager {
         data.setLevel(yml.getInt("level", 1));
         data.setExp(yml.getLong("exp", 0));
         data.setPotentialPoints(yml.getInt("points", 0));
-        for (String s : List.of("melee", "ranged", "health", "agility")) {
+        for (String s : STAT_KEYS) {
             data.setStat(s, yml.getInt("stats." + s, 0));
         }
         data.setDirty(false);
@@ -87,10 +86,7 @@ public class DataManager {
     public void saveAll() {
         int saved = 0;
         for (PlayerData data : cache.values()) {
-            if (data.isDirty()) {
-                save(data);
-                saved++;
-            }
+            if (data.isDirty()) { save(data); saved++; }
         }
         if (saved > 0) plugin.getLogger().info("Saved " + saved + " player data files.");
     }
@@ -100,9 +96,7 @@ public class DataManager {
         if (data != null && data.isDirty()) save(data);
     }
 
-    public void removeFromCache(UUID uuid) {
-        cache.remove(uuid);
-    }
+    public void removeFromCache(UUID uuid) { cache.remove(uuid); }
 
     public Collection<PlayerData> getAll() { return cache.values(); }
 }

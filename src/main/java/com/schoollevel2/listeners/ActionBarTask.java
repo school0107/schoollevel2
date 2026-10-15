@@ -18,9 +18,12 @@ public class ActionBarTask extends BukkitRunnable {
     @Override
     public void run() {
         tickCounter++;
-        boolean doActionbar = tickCounter % 20 == 0;
+        // Actionbar: gửi mỗi 10 tick (0.5s) — luôn luôn hiện, không bị mất
+        // Stats reapply: 200 tick (10s)
+        // Exp bar refresh: 5 tick
+        boolean doActionbar = tickCounter % 10 == 0;
         boolean doStats = tickCounter % 200 == 0;
-        boolean forceExpBar = tickCounter % 5 == 0; // liên tục ghi đè thanh exp để chống nhiễu
+        boolean forceExpBar = tickCounter % 5 == 0;
 
         for (Player p : Bukkit.getOnlinePlayers()) {
             PlayerData data = plugin.getDataManager().get(p.getUniqueId());
@@ -39,7 +42,6 @@ public class ActionBarTask extends BukkitRunnable {
                 p.sendActionBar(c);
             }
 
-            // Ghi đè thanh exp liên tục để chống vanilla exp nhảy vào
             if (forceExpBar && plugin.getConfigManager().isShowLevelBar()) {
                 plugin.getLevelManager().applyLevelBar(p, data);
             }

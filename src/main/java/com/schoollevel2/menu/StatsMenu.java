@@ -18,8 +18,8 @@ import java.util.*;
 public class StatsMenu {
 
     private final SchoolLevel2 plugin;
-    private static final String[] STAT_KEYS = {"melee", "ranged", "health", "agility"};
-    private final int[] SLOTS = {19, 21, 23, 25};
+    private static final String[] STAT_KEYS = {"melee", "ranged", "health", "agility", "chakra"};
+    private final int[] SLOTS = {19, 21, 23, 25, 31};
 
     public StatsMenu(SchoolLevel2 plugin) { this.plugin = plugin; }
 
@@ -112,7 +112,6 @@ public class StatsMenu {
         agiLore.add("&7 • Hiện tại: &a" + fmt(dodgePct) + "%");
         agiLore.add("&7 • Trần né: &c" + fmt(cfg.getDodgeCap()) + "% &8(cap)");
         agiLore.add("&7 • Áp dụng: &fđòn cận chiến & tầm xa");
-        agiLore.add("&7 • Khi né: hiện hạt mây + huỷ sát thương");
         agiLore.add("");
         agiLore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         agiLore.add("&7Cấp chỉ số: &b" + agiCurrent + " &7/ &e" + agiMax);
@@ -123,8 +122,55 @@ public class StatsMenu {
         agiLore.add("&e▶ Shift + Click trái &7: +10 điểm");
         agiLore.add("&c✖ Không thể giảm (dùng item Reset)");
 
-        inv.setItem(SLOTS[3], buildHead(p,
-                "&b&l💨 NHANH NHẸN", agiLore));
+        inv.setItem(SLOTS[3], buildHead(p, "&b&l💨 NHANH NHẸN", agiLore));
+
+        // ========== CHAKRA ==========
+        int chkMax = cfg.getStatMaxPoints("chakra");
+        int chkCurrent = data.getStat("chakra");
+        double critPct = Math.min(chkCurrent * cfg.getChakraCritPerPoint(), cfg.getChakraCritCap());
+        double critMax = Math.min(chkMax * cfg.getChakraCritPerPoint(), cfg.getChakraCritCap());
+        double chkHp = chkCurrent * cfg.getChakraHealthPerPoint();
+        double chkSpeed = chkCurrent * cfg.getChakraSpeedPerPoint();
+        double chkDodge = chkCurrent * cfg.getChakraDodgePerPoint();
+        double chkHpMax = chkMax * cfg.getChakraHealthPerPoint();
+        double chkSpeedMax = chkMax * cfg.getChakraSpeedPerPoint();
+        double chkDodgeMax = chkMax * cfg.getChakraDodgePerPoint();
+
+        List<String> chkLore = new ArrayList<>();
+        chkLore.add("&7Chỉ số tổng hợp: tăng nhiều thứ");
+        chkLore.add("&7cùng lúc, dành cho người chơi cân bằng.");
+        chkLore.add("");
+        chkLore.add("&d⚡ SÁT THƯƠNG CHÍ MẠNG");
+        chkLore.add("&7 • Điều kiện: &fnhảy lên đánh");
+        chkLore.add("&7 • Mỗi điểm: &d+" + fmt(cfg.getChakraCritPerPoint()) + "% crit");
+        chkLore.add("&7 • Hiện tại: &d" + fmt(critPct) + "% &8(&dx" + fmt(cfg.getChakraCritMultiplier()) + "&8)");
+        chkLore.add("&7 • Trần crit: &c" + fmt(cfg.getChakraCritCap()) + "%");
+        chkLore.add("");
+        chkLore.add("&c❤ MÁU TỐI ĐA");
+        chkLore.add("&7 • Mỗi điểm: &a+" + fmt(cfg.getChakraHealthPerPoint()) + " HP");
+        chkLore.add("&7 • Hiện tại: &a+" + fmt(chkHp) + " HP");
+        chkLore.add("");
+        chkLore.add("&e⚡ TỐC ĐỘ DI CHUYỂN");
+        chkLore.add("&7 • Mỗi điểm: &a+" + fmt(cfg.getChakraSpeedPerPoint()) + "%");
+        chkLore.add("&7 • Hiện tại: &a+" + fmt(chkSpeed) + "%");
+        chkLore.add("");
+        chkLore.add("&b💨 TỈ LỆ NÉ TRÁNH");
+        chkLore.add("&7 • Mỗi điểm: &a+" + fmt(cfg.getChakraDodgePerPoint()) + "%");
+        chkLore.add("&7 • Hiện tại: &a+" + fmt(chkDodge) + "%");
+        chkLore.add("&7 • &8(cộng dồn với agility, cap chung " + fmt(cfg.getDodgeCap()) + "%)");
+        chkLore.add("");
+        chkLore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        chkLore.add("&7Cấp chỉ số: &b" + chkCurrent + " &7/ &e" + chkMax);
+        chkLore.add("&7Tối đa: &a+" + fmt(chkHpMax) + " HP&7, &a+" + fmt(chkSpeedMax)
+                + "%&7 speed, &a+" + fmt(chkDodgeMax) + "%&7 dodge");
+        chkLore.add("&7Điểm khả dụng: &6" + data.getPotentialPoints());
+        chkLore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        chkLore.add("");
+        chkLore.add("&e▶ Click trái &7: +1 điểm");
+        chkLore.add("&e▶ Shift + Click trái &7: +10 điểm");
+        chkLore.add("&c✖ Không thể giảm (dùng item Reset)");
+
+        inv.setItem(SLOTS[4], buildHead(p, "&d&l🔥 CHAKRA", chkLore));
 
         p.openInventory(inv);
     }
