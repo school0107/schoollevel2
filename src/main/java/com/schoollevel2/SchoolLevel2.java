@@ -58,9 +58,11 @@ public class SchoolLevel2 extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new CombatListener(this), this);
         Bukkit.getPluginManager().registerEvents(new JoinQuitListener(this), this);
         Bukkit.getPluginManager().registerEvents(new MenuListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new ItemActionListener(this), this);
 
-        // Tasks
-        new ActionBarTask(this).runTaskTimer(this, 0L, configManager.getActionbarInterval());
+        // Tasks (ActionBar chạy mỗi 2 ticks để luôn hiển thị)
+        long actionbarInterval = configManager.getActionbarInterval(); // Mặc định 2
+        new ActionBarTask(this).runTaskTimer(this, 0L, actionbarInterval);
 
         long saveInterval = configManager.getSaveInterval() * 20L;
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> dataManager.saveAll(), saveInterval, saveInterval);

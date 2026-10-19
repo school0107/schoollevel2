@@ -18,10 +18,7 @@ public class ActionBarTask extends BukkitRunnable {
     @Override
     public void run() {
         tickCounter++;
-        // Actionbar: gửi mỗi 10 tick (0.5s) — luôn luôn hiện, không bị mất
-        // Stats reapply: 200 tick (10s)
-        // Exp bar refresh: 5 tick
-        boolean doActionbar = tickCounter % 10 == 0;
+        boolean doActionbar = tickCounter % 2 == 0; // Gửi mỗi 2 ticks
         boolean doStats = tickCounter % 200 == 0;
         boolean forceExpBar = tickCounter % 5 == 0;
 

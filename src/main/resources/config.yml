@@ -7,7 +7,8 @@ settings:
   max-level: 200
   points-per-level: 2
   start-level: 1
-  actionbar-interval-ticks: 10    # 10 tick = 0.5s, actionbar luôn hiện
+  # 2 ticks = 0.1s. Actionbar gửi liên tục không bao giờ bị đè
+  actionbar-interval-ticks: 2
   save-interval-seconds: 300
   auto-save-on-quit: true
   debug-mining: false
@@ -46,22 +47,18 @@ stats:
   melee:
     per-point: 1.0
     max-points: 100
-
   ranged:
     per-point: 1.0
     max-points: 100
-
   health:
     per-point: 2.0
     max-points: 50
-
   agility:
     speed-per-point: 1.0
     dodge-per-point: 0.25
     max-points: 20
     dodge-chance-cap: 5.0
     speed-effect-step: 20.0
-
   chakra:
     max-points: 50
     crit-chance-per-point: 0.5
@@ -85,6 +82,20 @@ menu:
   title: "&b&l✦ TIỀM NĂNG ✦"
   rows: 6
   filler-material: GRAY_STAINED_GLASS_PANE
+
+# Cấu hình hệ thống ép đồ RPG
+rpg-item:
+  level-required-msg: "&c✖ Bạn cần đạt Level &e{level}&c để sử dụng vật phẩm này!"
+  drop-on-death: true
+  prevent-unequip-on-low-level: true
+  lore-format:
+    melee: "&c ⚔ Sát thương cận chiến: &f+{value}"
+    ranged: "&a 🏹 Sát thương tầm xa: &f+{value}"
+    health: "&4 ❤ Máu tối đa: &f+{value}"
+    agility: "&b 💨 Nhanh nhẹn: &f+{value}"
+    chakra: "&d 🔥 Chakra: &f+{value}"
+    crit: "&6 💥 Tỉ lệ chí mạng: &f+{value}%"
+  level-lore-format: "&c✖ Yêu cầu: &eLevel {level}"
 
 messages:
   prefix: "&b[&dSchoolLevel2&b] &r"

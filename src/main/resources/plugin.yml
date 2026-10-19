@@ -1,10 +1,9 @@
 name: SchoolLevel2
-version: 1.0.0
+version: 1.0.1
 main: com.schoollevel2.SchoolLevel2
 api-version: '1.21'
 author: SchoolLevel2
-description: Level & Stats system with potential points
-softdepend: [PlaceholderAPI]
+description: Level & Stats system with potential points and RPG items
 
 commands:
   schoollevel:

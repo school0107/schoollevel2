@@ -109,13 +109,18 @@ public class SchoolLevelCommand implements CommandExecutor, TabCompleter {
                         + " &8| &7EXP: &a" + data.getExp()
                         + " &8| &7Points: &6" + data.getPotentialPoints()));
             }
+            case "item", "ep" -> {
+                if (!sender.hasPermission("schoollevel.admin")) { cm.send(sender, "no-permission"); return true; }
+                // Chuyển tiếp args (bỏ chữ "item") sang ItemCommand
+                String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
+                new ItemCommand(plugin).onCommand(sender, cmd, label, subArgs);
+            }
             default -> sendHelp(sender);
         }
         return true;
     }
 
     private void sendHelp(CommandSender s) {
-        // Dùng Component trực tiếp — KHÔNG dùng String
         s.sendMessage(ColorUtil.mm("&b&l✦ SchoolLevel2 Commands ✦"));
         s.sendMessage(ColorUtil.mm("&6/sl help &7- &fTrợ giúp"));
         s.sendMessage(ColorUtil.mm("&6/sl menu &7- &fMở menu tiềm năng"));
@@ -126,6 +131,7 @@ public class SchoolLevelCommand implements CommandExecutor, TabCompleter {
         s.sendMessage(ColorUtil.mm("&6/sl setlevel <player> <level> &7- &fĐặt cấp"));
         s.sendMessage(ColorUtil.mm("&6/sl addlevel <player> <amount> &7- &fCộng cấp"));
         s.sendMessage(ColorUtil.mm("&6/sl addpoints <player> <amount> &7- &fCộng điểm"));
+        s.sendMessage(ColorUtil.mm("&6/sl item <stat> <amount> [level] &7- &fÉp chỉ số vào đồ đang cầm"));
     }
 
     private long parseLong(String s) { try { return Long.parseLong(s); } catch (Exception e) { return -1; } }
@@ -134,12 +140,17 @@ public class SchoolLevelCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            return filter(List.of("help", "menu", "info", "reload", "give", "addexp", "setlevel", "addlevel", "addpoints"), args[0]);
+            return filter(List.of("help", "menu", "info", "reload", "give", "addexp", "setlevel", "addlevel", "addpoints", "item"), args[0]);
         }
-        if (args.length == 2 && List.of("give", "addexp", "setlevel", "addlevel", "addpoints").contains(args[0].toLowerCase())) {
-            List<String> names = new ArrayList<>();
-            for (Player p : Bukkit.getOnlinePlayers()) names.add(p.getName());
-            return filter(names, args[1]);
+        if (args.length == 2) {
+            if (List.of("give", "addexp", "setlevel", "addlevel", "addpoints").contains(args[0].toLowerCase())) {
+                List<String> names = new ArrayList<>();
+                for (Player p : Bukkit.getOnlinePlayers()) names.add(p.getName());
+                return filter(names, args[1]);
+            }
+            if (args[0].equalsIgnoreCase("item")) {
+                return filter(List.of("melee", "ranged", "health", "agility", "chakra", "crit"), args[1]);
+            }
         }
         return Collections.emptyList();
     }
