@@ -21,38 +21,32 @@ public class CombatListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent e) {
-        // ===== ATTACKER BONUS + CRIT =====
         Player attacker = null;
         boolean isRanged = false;
 
         if (e.getDamager() instanceof Player p) {
             attacker = p;
         } else if (e.getDamager() instanceof Arrow arrow && arrow.getShooter() instanceof Player p) {
-            attacker = p;
-            isRanged = true;
+            attacker = p; isRanged = true;
         } else if (e.getDamager() instanceof Trident trident && trident.getShooter() instanceof Player p) {
-            attacker = p;
-            isRanged = true;
+            attacker = p; isRanged = true;
         } else if (e.getDamager() instanceof Projectile proj && proj.getShooter() instanceof Player p) {
-            // Trứng, tuyết, ngọc ender...
-            attacker = p;
-            isRanged = true;
+            attacker = p; isRanged = true;
         }
 
         if (attacker != null) {
+            // Lấy tổng sát thương (Đã bao gồm Data + Item trên tay)
             double bonus = isRanged
-                    ? plugin.getStatsManager().getRangedBonus(attacker)
-                    : plugin.getStatsManager().getMeleeBonus(attacker);
+                    ? plugin.getStatsManager().getTotalRanged(attacker)
+                    : plugin.getStatsManager().getTotalMelee(attacker);
             if (bonus > 0) e.setDamage(e.getDamage() + bonus);
 
-            // CHAKRA CRIT: chỉ crit khi nhảy lên đánh
-            // Điều kiện crit: attacker không ở ground (đang nhảy) + roll crit thành công
+            // Crit
             boolean isJumping = !attacker.isOnGround();
             if (isJumping && plugin.getStatsManager().rollCrit(attacker)) {
                 double mult = plugin.getStatsManager().getCritMultiplier();
                 e.setDamage(e.getDamage() * mult);
 
-                // Hiệu ứng crit
                 try {
                     attacker.getWorld().spawnParticle(Particle.CRIT,
                             e.getEntity().getLocation().add(0, 1, 0),
@@ -63,9 +57,9 @@ public class CombatListener implements Listener {
             }
         }
 
-        // ===== DEFENDER DODGE =====
+        // Né đòn
         if (e.getEntity() instanceof Player victim) {
-            double dodge = plugin.getStatsManager().getDodgeChance(victim);
+            double dodge = plugin.getStatsManager().getTotalDodge(victim);
             if (dodge > 0 && rng.nextDouble() * 100.0 < dodge) {
                 EntityDamageEvent.DamageCause cause = e.getCause();
                 if (cause == EntityDamageEvent.DamageCause.ENTITY_ATTACK

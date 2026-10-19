@@ -5,18 +5,21 @@ import com.schoollevel2.data.PlayerData;
 import com.schoollevel2.utils.ItemUtil;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 public class StatsManager {
 
     private final SchoolLevel2 plugin;
     private final Random rng = new Random();
+    
+    // Key dùng cho AttributeModifier
+    private static final UUID SPEED_UUID = UUID.fromString("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d");
 
     public StatsManager(SchoolLevel2 plugin) {
         this.plugin = plugin;
@@ -27,101 +30,156 @@ public class StatsManager {
         if (data == null) return;
         var cfg = plugin.getConfigManager();
 
-        // 1. Tính stat từ PlayerData
-        int hpPoints = data.getStat("health");
-        int chakraPoints = data.getStat("chakra");
-        double bonusHp = hpPoints * cfg.getStatPerPoint("health") + chakraPoints * cfg.getChakraHealthPerPoint();
-        double speedPct = data.getStat("agility") * cfg.getAgilitySpeedPerPoint() + chakraPoints * cfg.getChakraSpeedPerPoint();
+        // 1. Tính Máu
+        double bonusHp = data.getStat("health") * cfg.getStatPerPoint("health") 
+                       + data.getStat("chakra") * cfg.getChakraHealthPerPoint();
+        
+        // 2. Tính Tốc độ (Nhanh nhẹn + Chakra + Trang bị)
+        double speedPct = data.getStat("agility") * cfg.getAgilitySpeedPerPoint() 
+                        + data.getStat("chakra") * cfg.getChakraSpeedPerPoint();
 
-        // 2. Cộng thêm stat từ Trang bị (Giáp, vũ khí trên tay)
+        // Cộng thêm từ Trang bị
         for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (item != null) {
-                Map<String, Double> itemStats = ItemUtil.getItemStats(item);
-                if (itemStats.containsKey("health")) bonusHp += itemStats.get("health");
-                if (itemStats.containsKey("chakra")) {
-                    double chk = itemStats.get("chakra");
+            if (item != null && !item.getType().isAir()) {
+                Map<String, Double> stats = ItemUtil.getItemStats(item);
+                if (stats.containsKey("health")) bonusHp += stats.get("health");
+                if (stats.containsKey("agility")) speedPct += stats.get("agility") * cfg.getAgilitySpeedPerPoint();
+                if (stats.containsKey("chakra")) {
+                    double chk = stats.get("chakra");
                     bonusHp += chk * cfg.getChakraHealthPerPoint();
                     speedPct += chk * cfg.getChakraSpeedPerPoint();
-                }
-                if (itemStats.containsKey("agility")) {
-                    speedPct += itemStats.get("agility") * cfg.getAgilitySpeedPerPoint();
                 }
             }
         }
 
-        // 3. Áp dụng Máu
-        AttributeInstance attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-        if (attr != null) {
+        // Áp dụng Máu
+        AttributeInstance hpAttr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        if (hpAttr != null) {
             double target = 20.0 + bonusHp;
-            if (Math.abs(attr.getBaseValue() - target) > 0.01) {
-                attr.setBaseValue(target);
+            if (Math.abs(hpAttr.getBaseValue() - target) > 0.01) {
+                hpAttr.setBaseValue(target);
             }
             if (player.getHealth() > target) player.setHealth(target);
         }
 
-        // 4. Áp dụng Tốc độ
-        player.removePotionEffect(PotionEffectType.SPEED);
-        double step = cfg.getSpeedEffectStep();
-        if (step > 0 && speedPct >= step) {
-            int amplifier = (int) Math.min(4, Math.floor(speedPct / step));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, amplifier, true, false, false));
-        }
-    }
-
-    // Tính tổng Sát thương cận chiến (Data + Item)
-    public double getMeleeBonus(Player player) {
-        PlayerData data = plugin.getDataManager().get(player.getUniqueId());
-        double bonus = data.getStat("melee") * plugin.getConfigManager().getStatPerPoint("melee");
-        
-        // Cộng từ item đang cầm trên tay
-        ItemStack hand = player.getInventory().getItemInMainHand();
-        Map<String, Double> itemStats = ItemUtil.getItemStats(hand);
-        if (itemStats.containsKey("melee")) bonus += itemStats.get("melee");
-
-        return bonus;
-    }
-
-    // Tính tổng Sát thương tầm xa (Data + Item)
-    public double getRangedBonus(Player player) {
-        PlayerData data = plugin.getDataManager().get(player.getUniqueId());
-        double bonus = data.getStat("ranged") * plugin.getConfigManager().getStatPerPoint("ranged");
-        
-        ItemStack hand = player.getInventory().getItemInMainHand();
-        Map<String, Double> itemStats = ItemUtil.getItemStats(hand);
-        if (itemStats.containsKey("ranged")) bonus += itemStats.get("ranged");
-
-        return bonus;
-    }
-
-    // Tính tỉ lệ né (Data + Item)
-    public double getDodgeChance(Player player) {
-        PlayerData data = plugin.getDataManager().get(player.getUniqueId());
-        var cfg = plugin.getConfigManager();
-        double chance = data.getStat("agility") * cfg.getAgilityDodgePerPoint() + data.getStat("chakra") * cfg.getChakraDodgePerPoint();
-
-        // Cộng từ trang bị
-        for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (item != null) {
-                Map<String, Double> itemStats = ItemUtil.getItemStats(item);
-                if (itemStats.containsKey("agility")) chance += itemStats.get("agility") * cfg.getAgilityDodgePerPoint();
-                if (itemStats.containsKey("chakra")) chance += itemStats.get("chakra") * cfg.getChakraDodgePerPoint();
+        // Áp dụng Tốc độ (Direct Attribute)
+        AttributeInstance speedAttr = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        if (speedAttr != null) {
+            // Xóa modifier cũ nếu có để tránh cộng dồn
+            for (AttributeModifier mod : speedAttr.getModifiers()) {
+                if (mod.getUniqueId().equals(SPEED_UUID)) {
+                    speedAttr.removeModifier(mod);
+                }
+            }
+            // Speed gốc của player là 0.1 (100%). Tăng % dựa trên mốc này.
+            if (speedPct > 0) {
+                double finalSpeedBonus = 0.1 * (speedPct / 100.0);
+                AttributeModifier speedMod = new AttributeModifier(
+                        SPEED_UUID, 
+                        "schoollevel2_speed", 
+                        finalSpeedBonus, 
+                        AttributeModifier.Operation.ADD_NUMBER
+                );
+                speedAttr.addModifier(speedMod);
             }
         }
-        return Math.min(chance, cfg.getDodgeCap());
     }
 
-    // Tính tỉ lệ Crit (Data + Item)
-    public double getCritChance(Player player) {
+    // ==========================================
+    // CÁC HÀM LẤY TỔNG CHỈ SỐ (BAO GỒM CẢ TRANG BỊ)
+    // ==========================================
+
+    public double getTotalMelee(Player player) {
         PlayerData data = plugin.getDataManager().get(player.getUniqueId());
-        var cfg = plugin.getConfigManager();
-        double chance = data.getStat("chakra") * cfg.getChakraCritPerPoint();
-
+        if (data == null) return 0;
+        double total = data.getStat("melee") * plugin.getConfigManager().getStatPerPoint("melee");
+        
         ItemStack hand = player.getInventory().getItemInMainHand();
-        Map<String, Double> itemStats = ItemUtil.getItemStats(hand);
-        if (itemStats.containsKey("crit")) chance += itemStats.get("crit");
-        if (itemStats.containsKey("chakra")) chance += itemStats.get("chakra") * cfg.getChakraCritPerPoint();
+        Map<String, Double> handStats = ItemUtil.getItemStats(hand);
+        if (handStats.containsKey("melee")) total += handStats.get("melee");
+        
+        return total;
+    }
 
-        return Math.min(chance, cfg.getChakraCritCap());
+    public double getTotalRanged(Player player) {
+        PlayerData data = plugin.getDataManager().get(player.getUniqueId());
+        if (data == null) return 0;
+        double total = data.getStat("ranged") * plugin.getConfigManager().getStatPerPoint("ranged");
+        
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        Map<String, Double> handStats = ItemUtil.getItemStats(hand);
+        if (handStats.containsKey("ranged")) total += handStats.get("ranged");
+        
+        return total;
+    }
+
+    public double getTotalHealth(Player player) {
+        PlayerData data = plugin.getDataManager().get(player.getUniqueId());
+        if (data == null) return 0;
+        var cfg = plugin.getConfigManager();
+        
+        double total = data.getStat("health") * cfg.getStatPerPoint("health")
+                     + data.getStat("chakra") * cfg.getChakraHealthPerPoint();
+        
+        for (ItemStack item : player.getInventory().getArmorContents()) {
+            if (item != null && !item.getType().isAir()) {
+                Map<String, Double> stats = ItemUtil.getItemStats(item);
+                if (stats.containsKey("health")) total += stats.get("health");
+                if (stats.containsKey("chakra")) total += stats.get("chakra") * cfg.getChakraHealthPerPoint();
+            }
+        }
+        return total;
+    }
+
+    public double getTotalSpeedPercent(Player player) {
+        PlayerData data = plugin.getDataManager().get(player.getUniqueId());
+        if (data == null) return 0;
+        var cfg = plugin.getConfigManager();
+        
+        double total = data.getStat("agility") * cfg.getAgilitySpeedPerPoint()
+                     + data.getStat("chakra") * cfg.getChakraSpeedPerPoint();
+                     
+        for (ItemStack item : player.getInventory().getArmorContents()) {
+            if (item != null && !item.getType().isAir()) {
+                Map<String, Double> stats = ItemUtil.getItemStats(item);
+                if (stats.containsKey("agility")) total += stats.get("agility") * cfg.getAgilitySpeedPerPoint();
+                if (stats.containsKey("chakra")) total += stats.get("chakra") * cfg.getChakraSpeedPerPoint();
+            }
+        }
+        return total;
+    }
+
+    public double getTotalDodge(Player player) {
+        PlayerData data = plugin.getDataManager().get(player.getUniqueId());
+        if (data == null) return 0;
+        var cfg = plugin.getConfigManager();
+        
+        double total = data.getStat("agility") * cfg.getAgilityDodgePerPoint()
+                     + data.getStat("chakra") * cfg.getChakraDodgePerPoint();
+                     
+        for (ItemStack item : player.getInventory().getArmorContents()) {
+            if (item != null && !item.getType().isAir()) {
+                Map<String, Double> stats = ItemUtil.getItemStats(item);
+                if (stats.containsKey("agility")) total += stats.get("agility") * cfg.getAgilityDodgePerPoint();
+                if (stats.containsKey("chakra")) total += stats.get("chakra") * cfg.getChakraDodgePerPoint();
+            }
+        }
+        return Math.min(total, cfg.getDodgeCap());
+    }
+
+    public double getTotalCrit(Player player) {
+        PlayerData data = plugin.getDataManager().get(player.getUniqueId());
+        if (data == null) return 0;
+        var cfg = plugin.getConfigManager();
+        
+        double total = data.getStat("chakra") * cfg.getChakraCritPerPoint();
+        
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        Map<String, Double> handStats = ItemUtil.getItemStats(hand);
+        if (handStats.containsKey("crit")) total += handStats.get("crit");
+        if (handStats.containsKey("chakra")) total += handStats.get("chakra") * cfg.getChakraCritPerPoint();
+        
+        return Math.min(total, cfg.getChakraCritCap());
     }
 
     public double getCritMultiplier() {
@@ -129,10 +187,14 @@ public class StatsManager {
     }
 
     public boolean rollCrit(Player player) {
-        double chance = getCritChance(player);
+        double chance = getTotalCrit(player);
         if (chance <= 0) return false;
         return rng.nextDouble() * 100.0 < chance;
     }
+
+    // ==========================================
+    // QUẢN LÝ ĐIỂM
+    // ==========================================
 
     public boolean tryAddStat(Player player, String stat, int amount) {
         PlayerData data = plugin.getDataManager().get(player.getUniqueId());

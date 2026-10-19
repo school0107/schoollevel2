@@ -32,6 +32,8 @@ public class StatsMenu {
     public void open(Player p) {
         PlayerData data = plugin.getDataManager().getOrCreate(p.getUniqueId(), p.getName());
         var cfg = plugin.getConfigManager();
+        var statsMgr = plugin.getStatsManager();
+
         Component title = ColorUtil.mm(cfg.getCfg().getString("menu.title", "Menu"));
         Inventory inv = Bukkit.createInventory(new StatsHolder(p.getUniqueId()), 54, title);
 
@@ -50,147 +52,125 @@ public class StatsMenu {
                 "&8Cày quặng để nhận thêm exp!",
                 "&8Mỗi cấp nhận +" + cfg.getPointsPerLevel() + " điểm."
         );
-        inv.setItem(4, ItemUtil.make(Material.NETHER_STAR,
-                "&6&l✦ THÔNG TIN CỦA BẠN ✦", infoLore));
+        inv.setItem(4, ItemUtil.make(Material.NETHER_STAR, "&6&l✦ THÔNG TIN CỦA BẠN ✦", infoLore));
 
-        // MELEE
+        // ================= MELEE =================
+        double meleeBase = data.getStat("melee") * cfg.getStatPerPoint("melee");
+        double meleeTotal = statsMgr.getTotalMelee(p);
+        String meleeFormat = buildFormat(meleeTotal, meleeBase, "dmg");
+        
         addStatItem(inv, p, data, SLOTS[0], "melee",
                 "&c&l⚔ SÁT THƯƠNG CẬN CHIẾN",
-                cfg.getStatMaxPoints("melee"), cfg.getStatPerPoint("melee"),
-                List.of(
-                        "&7Tăng sát thương khi dùng:",
-                        "&f • Kiếm, Rìu, Cuốc, Xẻng",
-                        "&f • Đánh tay không",
-                        "",
-                        "&7Mỗi điểm: &a+" + fmt(cfg.getStatPerPoint("melee")) + " ❤ sát thương"
-                ), "dmg");
+                cfg.getStatMaxPoints("melee"),
+                List.of("&7Tăng sát thương vũ khí cận chiến.", "", meleeFormat), "dmg");
 
-        // RANGED
+        // ================= RANGED =================
+        double rangedBase = data.getStat("ranged") * cfg.getStatPerPoint("ranged");
+        double rangedTotal = statsMgr.getTotalRanged(p);
+        String rangedFormat = buildFormat(rangedTotal, rangedBase, "dmg");
+
         addStatItem(inv, p, data, SLOTS[1], "ranged",
                 "&a&l🏹 SÁT THƯƠNG TẦM XA",
-                cfg.getStatMaxPoints("ranged"), cfg.getStatPerPoint("ranged"),
-                List.of(
-                        "&7Tăng sát thương khi dùng:",
-                        "&f • Cung, Nỏ",
-                        "&f • Đinh ba (ném)",
-                        "&f • Trứng, Tuyết, Ngọc Ender",
-                        "",
-                        "&7Mỗi điểm: &a+" + fmt(cfg.getStatPerPoint("ranged")) + " ❤ sát thương"
-                ), "dmg");
+                cfg.getStatMaxPoints("ranged"),
+                List.of("&7Tăng sát thương cung, nỏ, đinh ba.", "", rangedFormat), "dmg");
 
-        // HEALTH
+        // ================= HEALTH =================
+        double hpBase = data.getStat("health") * cfg.getStatPerPoint("health") + data.getStat("chakra") * cfg.getChakraHealthPerPoint();
+        double hpTotal = statsMgr.getTotalHealth(p);
+        String hpFormat = buildFormat(hpTotal, hpBase, "hp");
+
         addStatItem(inv, p, data, SLOTS[2], "health",
                 "&c&l❤ MÁU TỐI ĐA",
-                cfg.getStatMaxPoints("health"), cfg.getStatPerPoint("health"),
-                List.of(
-                        "&7Tăng lượng máu tối đa:",
-                        "&f • Hiển thị trên thanh máu",
-                        "&f • Áp dụng ngay lập tức",
-                        "",
-                        "&7Mỗi điểm: &a+" + fmt(cfg.getStatPerPoint("health")) + " ❤ máu",
-                        "&7(1 ❤ = 2 HP)"
-                ), "hp");
+                cfg.getStatMaxPoints("health"),
+                List.of("&7Tăng lượng máu tối đa.", "", hpFormat), "hp");
 
-        // AGILITY
+        // ================= AGILITY =================
         int agiMax = cfg.getStatMaxPoints("agility");
         int agiCurrent = data.getStat("agility");
-        double speedPct = agiCurrent * cfg.getAgilitySpeedPerPoint();
-        double dodgePct = Math.min(agiCurrent * cfg.getAgilityDodgePerPoint(), cfg.getDodgeCap());
-        double speedMax = agiMax * cfg.getAgilitySpeedPerPoint();
-        double dodgeMax = Math.min(agiMax * cfg.getAgilityDodgePerPoint(), cfg.getDodgeCap());
+        
+        double agiSpeedBase = agiCurrent * cfg.getAgilitySpeedPerPoint() + data.getStat("chakra") * cfg.getChakraSpeedPerPoint();
+        double agiSpeedTotal = statsMgr.getTotalSpeedPercent(p);
+        
+        double agiDodgeBase = agiCurrent * cfg.getAgilityDodgePerPoint() + data.getStat("chakra") * cfg.getChakraDodgePerPoint();
+        double agiDodgeTotal = statsMgr.getTotalDodge(p);
 
         List<String> agiLore = new ArrayList<>();
-        agiLore.add("&7Chỉ số tổng hợp: &bTốc độ &7+ &bNé tránh");
+        agiLore.add("&7Tăng tốc độ chạy và né đòn.");
         agiLore.add("");
-        agiLore.add("&e⚡ TỐC ĐỘ CHẠY");
-        agiLore.add("&7 • Mỗi điểm: &a+" + fmt(cfg.getAgilitySpeedPerPoint()) + "% tốc độ");
-        agiLore.add("&7 • Hiện tại: &a+" + fmt(speedPct) + "%");
-        agiLore.add("&7 • Tối đa: &a+" + fmt(speedMax) + "% (full " + agiMax + " điểm)");
+        agiLore.add("&e⚡ TỐC ĐỘ CHẠY: &a+" + fmt(agiSpeedTotal) + "%");
+        if (agiSpeedTotal > agiSpeedBase) agiLore.add("&8 (Gốc: +" + fmt(agiSpeedBase) + "% | Đồ: +" + fmt(agiSpeedTotal - agiSpeedBase) + "%)");
         agiLore.add("");
-        agiLore.add("&e💨 TỈ LỆ NÉ ĐÒN");
-        agiLore.add("&7 • Mỗi điểm: &a+" + fmt(cfg.getAgilityDodgePerPoint()) + "% né");
-        agiLore.add("&7 • Hiện tại: &a" + fmt(dodgePct) + "%");
-        agiLore.add("&7 • Trần né: &c" + fmt(cfg.getDodgeCap()) + "% &8(cap)");
-        agiLore.add("&7 • Áp dụng: &fđòn cận chiến & tầm xa");
-        agiLore.add("");
-        agiLore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        agiLore.add("&7Cấp chỉ số: &b" + agiCurrent + " &7/ &e" + agiMax);
-        agiLore.add("&7Điểm khả dụng: &6" + data.getPotentialPoints());
-        agiLore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        agiLore.add("");
-        agiLore.add("&e▶ Click trái &7: +1 điểm");
-        agiLore.add("&e▶ Shift + Click trái &7: +10 điểm");
-        agiLore.add("&c✖ Không thể giảm (dùng item Reset)");
+        agiLore.add("&e💨 TỈ LỆ NÉ: &a" + fmt(agiDodgeTotal) + "%");
+        if (agiDodgeTotal > agiDodgeBase) agiLore.add("&8 (Gốc: +" + fmt(agiDodgeBase) + "% | Đồ: +" + fmt(agiDodgeTotal - agiDodgeBase) + "%)");
+        agiLore.add("&7 • Trần né: &c" + fmt(cfg.getDodgeCap()) + "%");
+        
+        addStatItemCustom(inv, p, data, SLOTS[3], "agility",
+                "&b&l💨 NHANH NHẸN", agiMax, agiLore);
 
-        inv.setItem(SLOTS[3], buildHead(p, "&b&l💨 NHANH NHẸN", agiLore));
-
-        // ========== CHAKRA ==========
+        // ================= CHAKRA =================
         int chkMax = cfg.getStatMaxPoints("chakra");
         int chkCurrent = data.getStat("chakra");
-        double critPct = Math.min(chkCurrent * cfg.getChakraCritPerPoint(), cfg.getChakraCritCap());
-        double critMax = Math.min(chkMax * cfg.getChakraCritPerPoint(), cfg.getChakraCritCap());
-        double chkHp = chkCurrent * cfg.getChakraHealthPerPoint();
-        double chkSpeed = chkCurrent * cfg.getChakraSpeedPerPoint();
-        double chkDodge = chkCurrent * cfg.getChakraDodgePerPoint();
-        double chkHpMax = chkMax * cfg.getChakraHealthPerPoint();
-        double chkSpeedMax = chkMax * cfg.getChakraSpeedPerPoint();
-        double chkDodgeMax = chkMax * cfg.getChakraDodgePerPoint();
+        
+        double chkCritTotal = statsMgr.getTotalCrit(p);
+        double chkHpTotal = statsMgr.getTotalHealth(p);
+        double chkSpeedTotal = statsMgr.getTotalSpeedPercent(p);
+        double chkDodgeTotal = statsMgr.getTotalDodge(p);
 
         List<String> chkLore = new ArrayList<>();
         chkLore.add("&7Chỉ số tổng hợp: tăng nhiều thứ");
-        chkLore.add("&7cùng lúc, dành cho người chơi cân bằng.");
+        chkLore.add("&7cùng lúc, dành cho người cân bằng.");
         chkLore.add("");
-        chkLore.add("&d⚡ SÁT THƯƠNG CHÍ MẠNG");
+        chkLore.add("&d⚡ SÁT THƯƠNG CHÍ MẠNG: &d" + fmt(chkCritTotal) + "% &8(x" + fmt(cfg.getChakraCritMultiplier()) + ")");
         chkLore.add("&7 • Điều kiện: &fnhảy lên đánh");
-        chkLore.add("&7 • Mỗi điểm: &d+" + fmt(cfg.getChakraCritPerPoint()) + "% crit");
-        chkLore.add("&7 • Hiện tại: &d" + fmt(critPct) + "% &8(&dx" + fmt(cfg.getChakraCritMultiplier()) + "&8)");
-        chkLore.add("&7 • Trần crit: &c" + fmt(cfg.getChakraCritCap()) + "%");
         chkLore.add("");
-        chkLore.add("&c❤ MÁU TỐI ĐA");
-        chkLore.add("&7 • Mỗi điểm: &a+" + fmt(cfg.getChakraHealthPerPoint()) + " HP");
-        chkLore.add("&7 • Hiện tại: &a+" + fmt(chkHp) + " HP");
+        chkLore.add("&c❤ MÁU TỐI ĐA: &a+" + fmt(chkHpTotal) + " HP");
         chkLore.add("");
-        chkLore.add("&e⚡ TỐC ĐỘ DI CHUYỂN");
-        chkLore.add("&7 • Mỗi điểm: &a+" + fmt(cfg.getChakraSpeedPerPoint()) + "%");
-        chkLore.add("&7 • Hiện tại: &a+" + fmt(chkSpeed) + "%");
+        chkLore.add("&e⚡ TỐC ĐỘ CHẠY: &a+" + fmt(chkSpeedTotal) + "%");
         chkLore.add("");
-        chkLore.add("&b💨 TỈ LỆ NÉ TRÁNH");
-        chkLore.add("&7 • Mỗi điểm: &a+" + fmt(cfg.getChakraDodgePerPoint()) + "%");
-        chkLore.add("&7 • Hiện tại: &a+" + fmt(chkDodge) + "%");
-        chkLore.add("&7 • &8(cộng dồn với agility, cap chung " + fmt(cfg.getDodgeCap()) + "%)");
-        chkLore.add("");
-        chkLore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        chkLore.add("&7Cấp chỉ số: &b" + chkCurrent + " &7/ &e" + chkMax);
-        chkLore.add("&7Tối đa: &a+" + fmt(chkHpMax) + " HP&7, &a+" + fmt(chkSpeedMax)
-                + "%&7 speed, &a+" + fmt(chkDodgeMax) + "%&7 dodge");
-        chkLore.add("&7Điểm khả dụng: &6" + data.getPotentialPoints());
-        chkLore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        chkLore.add("");
-        chkLore.add("&e▶ Click trái &7: +1 điểm");
-        chkLore.add("&e▶ Shift + Click trái &7: +10 điểm");
-        chkLore.add("&c✖ Không thể giảm (dùng item Reset)");
+        chkLore.add("&b💨 TỈ LỆ NÉ: &a" + fmt(chkDodgeTotal) + "%");
+        chkLore.add("&8(Cộng dồn với Agility, cap " + fmt(cfg.getDodgeCap()) + "%)");
 
-        inv.setItem(SLOTS[4], buildHead(p, "&d&l🔥 CHAKRA", chkLore));
+        addStatItemCustom(inv, p, data, SLOTS[4], "chakra",
+                "&d&l🔥 CHAKRA", chkMax, chkLore);
 
         p.openInventory(inv);
     }
 
+    private String buildFormat(double total, double base, String type) {
+        String strTotal = type.equals("hp") ? "+" + fmt(total) + " ❤" : "+" + fmt(total) + " ❤";
+        if (total <= base) return "&7Tổng cộng: &a" + strTotal;
+        
+        String strBase = type.equals("hp") ? "+" + fmt(base) + " ❤" : "+" + fmt(base) + " ❤";
+        String strItem = type.equals("hp") ? "+" + fmt(total - base) + " ❤" : "+" + fmt(total - base) + " ❤";
+        return "&7Tổng cộng: &a" + strTotal + "\n&8 (Gốc: " + strBase + " | Đồ: " + strItem + ")";
+    }
+
     private void addStatItem(Inventory inv, Player p, PlayerData data, int slot, String key,
-                             String displayName, int max, double per, List<String> desc, String type) {
+                             String displayName, int max, List<String> desc, String type) {
         int current = data.getStat(key);
-        double value = current * per;
-
-        String valueStr = switch (type) {
-            case "hp" -> "+" + fmt(value) + " ❤";
-            case "dmg" -> "+" + fmt(value) + " ❤ sát thương";
-            default -> "+" + fmt(value);
-        };
-
         List<String> lore = new ArrayList<>(desc);
+        
         lore.add("");
         lore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("&7Cấp chỉ số: &b" + current + " &7/ &e" + max);
-        lore.add("&7Hiệu ứng hiện tại: &a" + valueStr);
+        lore.add("&7Điểm khả dụng: &6" + data.getPotentialPoints());
+        lore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("");
+        lore.add("&e▶ Click trái &7: +1 điểm");
+        lore.add("&e▶ Shift + Click trái &7: +10 điểm");
+        lore.add("&c✖ Không thể giảm (dùng item Reset)");
+
+        inv.setItem(slot, buildHead(p, displayName, lore));
+    }
+
+    private void addStatItemCustom(Inventory inv, Player p, PlayerData data, int slot, String key,
+                                   String displayName, int max, List<String> desc) {
+        int current = data.getStat(key);
+        List<String> lore = new ArrayList<>(desc);
+        
+        lore.add("");
+        lore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("&7Cấp chỉ số: &b" + current + " &7/ &e" + max);
         lore.add("&7Điểm khả dụng: &6" + data.getPotentialPoints());
         lore.add("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("");

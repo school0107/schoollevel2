@@ -39,9 +39,9 @@ public class ItemUtil {
     }
 
     // ==========================================
-    // ÉP CHỈ SỐ VÀO ITEM (Dùng PDC)
+    // ÉP CHỈ SỐ VÀO ITEM
     // ==========================================
-    public static ItemStack applyRPGStats(ItemStack item, String statKey, double amount, int reqLevel) {
+    public static ItemStack applyRPGStats(ItemStack item, String statKey, double amount) {
         if (item == null || item.getType().isAir()) return null;
         
         ItemStack clone = item.clone();
@@ -50,18 +50,34 @@ public class ItemUtil {
 
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
 
-        // Lưu stat
         if (amount != 0) {
             NamespacedKey statKeyObj = getKey(statKey);
             double current = pdc.getOrDefault(statKeyObj, PersistentDataType.DOUBLE, 0.0);
             pdc.set(statKeyObj, PersistentDataType.DOUBLE, current + amount);
         }
 
-        // Lưu level yêu cầu
-        if (reqLevel > 0) {
-            NamespacedKey reqKey = getKey("req_level");
-            int currentReq = pdc.getOrDefault(reqKey, PersistentDataType.INTEGER, 0);
-            pdc.set(reqKey, PersistentDataType.INTEGER, Math.max(currentReq, reqLevel));
+        clone.setItemMeta(meta);
+        return rebuildLore(clone);
+    }
+
+    // ==========================================
+    // ÉP YÊU CẦU LEVEL
+    // ==========================================
+    public static ItemStack applyLevelRequirement(ItemStack item, int reqLevel) {
+        if (item == null || item.getType().isAir()) return null;
+        
+        ItemStack clone = item.clone();
+        ItemMeta meta = clone.getItemMeta();
+        if (meta == null) return clone;
+
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        NamespacedKey reqKey = getKey("req_level");
+        
+        // Ghi đè hoặc set mới
+        if (reqLevel <= 0) {
+            pdc.remove(reqKey);
+        } else {
+            pdc.set(reqKey, PersistentDataType.INTEGER, reqLevel);
         }
 
         clone.setItemMeta(meta);
@@ -75,12 +91,13 @@ public class ItemUtil {
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         List<Component> lore = meta.lore() != null ? new ArrayList<>(meta.lore()) : new ArrayList<>();
 
-        // Xoá lore cũ do plugin tạo
+        // Xoá lore cũ do plugin tạo (dùng chung các icon để check)
         lore.removeIf(c -> {
             String plain = ColorUtil.stripTags(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().serialize(c));
             return plain.contains("⚔") || plain.contains("🏹") || plain.contains("❤") || 
                    plain.contains("💨") || plain.contains("🔥") || plain.contains("💥") || 
-                   plain.contains("Yêu cầu:") || plain.contains("Vật phẩm RPG");
+                   plain.contains("Yêu cầu:") || plain.contains("Vật phẩm RPG") || 
+                   plain.contains("▬▬▬▬");
         });
 
         String[] stats = {"melee", "ranged", "health", "agility", "chakra", "crit"};
@@ -90,8 +107,10 @@ public class ItemUtil {
             double val = pdc.getOrDefault(getKey(s), PersistentDataType.DOUBLE, 0.0);
             if (val > 0) {
                 hasStat = true;
-                String format = getLoreFormat(s).replace("{value}", fmt(val));
-                lore.add(ColorUtil.mm(format));
+                String format = getLoreFormat(s);
+                // Thay thế {value}
+                String formattedVal = format.replace("{value}", fmt(val));
+                lore.add(ColorUtil.mm(formattedVal));
             }
         }
 
@@ -106,6 +125,9 @@ public class ItemUtil {
             lore.add(ColorUtil.mm("&8&oVật phẩm RPG"));
             meta.lore(lore);
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            item.setItemMeta(meta);
+        } else {
+            meta.lore(lore);
             item.setItemMeta(meta);
         }
 
@@ -124,7 +146,6 @@ public class ItemUtil {
         };
     }
 
-    // Đọc stat từ item
     public static Map<String, Double> getItemStats(ItemStack item) {
         Map<String, Double> map = new HashMap<>();
         if (item == null || item.getType().isAir() || !item.hasItemMeta()) return map;
@@ -137,7 +158,6 @@ public class ItemUtil {
         return map;
     }
 
-    // Đọc level yêu cầu
     public static int getRequiredLevel(ItemStack item) {
         if (item == null || item.getType().isAir() || !item.hasItemMeta()) return 0;
         return item.getItemMeta().getPersistentDataContainer().getOrDefault(getKey("req_level"), PersistentDataType.INTEGER, 0);
