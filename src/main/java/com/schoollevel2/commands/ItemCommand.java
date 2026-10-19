@@ -33,7 +33,7 @@ public class ItemCommand implements CommandExecutor {
 
         String stat = args[0].toLowerCase();
         if (!isValidStat(stat)) {
-            p.sendMessage(ColorUtil.mm("&cChỉ số không hợp lệ!"));
+            p.sendMessage(ColorUtil.mm("&cChỉ số không hợp lệ! Chọn: melee, ranged, health, agility, chakra, crit"));
             return true;
         }
 
@@ -42,6 +42,7 @@ public class ItemCommand implements CommandExecutor {
             plugin.getConfigManager().send(p, "invalid-number");
             return true;
         }
+        
         int reqLevel = 0;
         if (args.length >= 3) {
             try { reqLevel = Integer.parseInt(args[2]); } catch (Exception ignored) {}

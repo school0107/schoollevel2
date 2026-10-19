@@ -1,19 +1,25 @@
 package com.schoollevel2.utils;
 
-import de.tr7zw.changeme.nbtapi.NBTItem;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class ItemUtil {
 
-    private static final String NBT_TAG = "SchoolLevel2_ItemData";
+    private static NamespacedKey getKey(String name) {
+        return new NamespacedKey(JavaPlugin.getProvidingPlugin(ItemUtil.class), "rpg_" + name);
+    }
 
     public static ItemStack make(Material mat, String name, List<String> lore) {
         return new ItemBuilder(mat).name(name).lore(lore).build();
@@ -33,53 +39,63 @@ public class ItemUtil {
     }
 
     // ==========================================
-    // ÉP CHỈ SỐ VÀO ITEM
+    // ÉP CHỈ SỐ VÀO ITEM (Dùng PDC)
     // ==========================================
     public static ItemStack applyRPGStats(ItemStack item, String statKey, double amount, int reqLevel) {
         if (item == null || item.getType().isAir()) return null;
         
         ItemStack clone = item.clone();
-        NBTItem nbt = new NBTItem(clone);
+        ItemMeta meta = clone.getItemMeta();
+        if (meta == null) return clone;
 
-        // Lưu data ẩn
-        nbt.setDouble(NBT_TAG + "_" + statKey, nbt.getDouble(NBT_TAG + "_" + statKey) + amount);
-        if (reqLevel > 0) {
-            int currentReq = nbt.getInteger(NBT_TAG + "_req_level");
-            nbt.setInteger(NBT_TAG + "_req_level", Math.max(currentReq, reqLevel));
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+
+        // Lưu stat
+        if (amount != 0) {
+            NamespacedKey statKeyObj = getKey(statKey);
+            double current = pdc.getOrDefault(statKeyObj, PersistentDataType.DOUBLE, 0.0);
+            pdc.set(statKeyObj, PersistentDataType.DOUBLE, current + amount);
         }
 
-        nbt.applyNBT(clone);
+        // Lưu level yêu cầu
+        if (reqLevel > 0) {
+            NamespacedKey reqKey = getKey("req_level");
+            int currentReq = pdc.getOrDefault(reqKey, PersistentDataType.INTEGER, 0);
+            pdc.set(reqKey, PersistentDataType.INTEGER, Math.max(currentReq, reqLevel));
+        }
 
-        // Build lại Lore RPG
+        clone.setItemMeta(meta);
         return rebuildLore(clone);
     }
 
     private static ItemStack rebuildLore(ItemStack item) {
-        NBTItem nbt = new NBTItem(item);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
 
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
         List<Component> lore = meta.lore() != null ? new ArrayList<>(meta.lore()) : new ArrayList<>();
 
-        // Xoá lore cũ do plugin tạo (nếu có)
-        lore.removeIf(c -> ColorUtil.stripTags(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().serialize(c)).contains("⚡") ||
-                           ColorUtil.stripTags(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().serialize(c)).contains("✧") ||
-                           ColorUtil.stripTags(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().serialize(c)).contains("✖ Yêu cầu"));
+        // Xoá lore cũ do plugin tạo
+        lore.removeIf(c -> {
+            String plain = ColorUtil.stripTags(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().serialize(c));
+            return plain.contains("⚔") || plain.contains("🏹") || plain.contains("❤") || 
+                   plain.contains("💨") || plain.contains("🔥") || plain.contains("💥") || 
+                   plain.contains("Yêu cầu:") || plain.contains("Vật phẩm RPG");
+        });
 
         String[] stats = {"melee", "ranged", "health", "agility", "chakra", "crit"};
-        String[] statNames = {"⚔ Sát thương cận chiến", "🏹 Sát thương tầm xa", "❤ Máu tối đa", "💨 Nhanh nhẹn", "🔥 Chakra", "💥 Tỉ lệ chí mạng"};
-        String[] colors = {"&c", "&a", "&4", "&b", "&d", "&6"};
-
         boolean hasStat = false;
-        for (int i = 0; i < stats.length; i++) {
-            double val = nbt.getDouble(NBT_TAG + "_" + stats[i]);
+
+        for (String s : stats) {
+            double val = pdc.getOrDefault(getKey(s), PersistentDataType.DOUBLE, 0.0);
             if (val > 0) {
                 hasStat = true;
-                lore.add(ColorUtil.mm(colors[i] + " " + statNames[i] + ": &f+" + fmt(val)));
+                String format = getLoreFormat(s).replace("{value}", fmt(val));
+                lore.add(ColorUtil.mm(format));
             }
         }
 
-        int reqLevel = nbt.getInteger(NBT_TAG + "_req_level");
+        int reqLevel = pdc.getOrDefault(getKey("req_level"), PersistentDataType.INTEGER, 0);
         if (reqLevel > 0) {
             hasStat = true;
             lore.add(ColorUtil.mm("&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"));
@@ -96,21 +112,35 @@ public class ItemUtil {
         return item;
     }
 
+    private static String getLoreFormat(String stat) {
+        return switch (stat) {
+            case "melee" -> "&c ⚔ Sát thương cận chiến: &f+{value}";
+            case "ranged" -> "&a 🏹 Sát thương tầm xa: &f+{value}";
+            case "health" -> "&4 ❤ Máu tối đa: &f+{value}";
+            case "agility" -> "&b 💨 Nhanh nhẹn: &f+{value}";
+            case "chakra" -> "&d 🔥 Chakra: &f+{value}";
+            case "crit" -> "&6 💥 Tỉ lệ chí mạng: &f+{value}%";
+            default -> "&f?";
+        };
+    }
+
+    // Đọc stat từ item
     public static Map<String, Double> getItemStats(ItemStack item) {
-        Map<String, Double> map = new java.util.HashMap<>();
-        if (item == null || item.getType().isAir()) return map;
-        NBTItem nbt = new NBTItem(item);
+        Map<String, Double> map = new HashMap<>();
+        if (item == null || item.getType().isAir() || !item.hasItemMeta()) return map;
+        
+        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
         for (String s : new String[]{"melee", "ranged", "health", "agility", "chakra", "crit"}) {
-            double val = nbt.getDouble(NBT_TAG + "_" + s);
+            double val = pdc.getOrDefault(getKey(s), PersistentDataType.DOUBLE, 0.0);
             if (val != 0) map.put(s, val);
         }
         return map;
     }
 
+    // Đọc level yêu cầu
     public static int getRequiredLevel(ItemStack item) {
-        if (item == null || item.getType().isAir()) return 0;
-        NBTItem nbt = new NBTItem(item);
-        return nbt.getInteger(NBT_TAG + "_req_level");
+        if (item == null || item.getType().isAir() || !item.hasItemMeta()) return 0;
+        return item.getItemMeta().getPersistentDataContainer().getOrDefault(getKey("req_level"), PersistentDataType.INTEGER, 0);
     }
 
     private static String fmt(double d) {
